@@ -13,7 +13,16 @@ if "build_queue" not in st.session_state: st.session_state.build_queue = []
 if "final_json" not in st.session_state: st.session_state.final_json = None
 if "scroll_up" not in st.session_state: st.session_state.scroll_up = False
 
-st.set_page_config(page_title="WIN Time Phonics", layout="wide", page_icon="🏫")
+# ==========================================
+# 🎨 BRANDING SECTION (CHANGE THESE!)
+# ==========================================
+APP_NAME = "WIN Time Phonics Builder"
+APP_EMOJI = "🎯" # This shows up in the browser tab!
+SIDEBAR_TITLE = "🏫 WIN Time Architect"
+FOOTER_TEXT = "🚀 WIN Time Phonics Builder v1.5"
+
+st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
+# ==========================================
 
 # --- 2. PHONICS DATABASE & DESCRIPTIONS ---
 PHONICS_MENU = {
@@ -57,7 +66,7 @@ st.markdown("""
 
 # --- 4. THE ARCHITECT SIDEBAR ---
 with st.sidebar:
-    st.title("🏫 WIN Time Architect")
+    st.title(SIDEBAR_TITLE)
     grade = st.selectbox("Grade (Interest)", ["1st", "2nd", "3rd", "4th+"])
     r_level = st.select_slider("Difficulty", options=["Beginning", "Intermediate", "Advanced"])
     
@@ -79,7 +88,6 @@ with st.sidebar:
             "cat": sel_cat, "sounds": sel_targets
         })
 
-    # NEW: Advanced Randomizer for 6 Activities
     if st.button("🎲 Choose For Me", use_container_width=True):
         st.session_state.build_queue = []
         grade_logic = {
@@ -89,21 +97,15 @@ with st.sidebar:
             "4th+": ["Multisyllable", "Endings", "Mixed Review (All Types)"]
         }
         
-        # Grab all 6 unique activities and completely shuffle their order
         chosen_acts = list(ACTIVITY_INFO.keys())
         random.shuffle(chosen_acts)
         
-        # Assign a randomized target to EVERY individual activity based on the grade level
         for act in chosen_acts:
             auto_cat = random.choice(grade_logic[grade])
             auto_target = [random.choice(PHONICS_MENU[auto_cat])]
-            
             st.session_state.build_queue.append({
-                "type": act, 
-                "nonsense": (act == "Nonsense Word Fluency"), 
-                "id": str(uuid.uuid4()), 
-                "cat": auto_cat, 
-                "sounds": auto_target
+                "type": act, "nonsense": (act == "Nonsense Word Fluency"), 
+                "id": str(uuid.uuid4()), "cat": auto_cat, "sounds": auto_target
             })
         st.rerun()
 
@@ -113,7 +115,7 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-    st.caption("🚀 **WIN Time Phonics Builder v1.4**")
+    st.caption(FOOTER_TEXT)
     st.info("Have a new activity idea? [Contact the Creator](mailto:your-email@example.com)")
 
 # --- 5. MAIN BUILDER ---
@@ -143,7 +145,7 @@ with col_plan:
 
     if st.session_state.build_queue:
         if st.button("🚀 GENERATE WORKSHEET", type="primary", use_container_width=True):
-            with st.spinner("AI is crafting unique content... this may take up to 30 seconds for large packets..."):
+            with st.spinner("AI is crafting unique content... this may take up to 30 seconds..."):
                 seed = random.randint(1, 1000000)
                 all_targets = set()
                 for item in st.session_state.build_queue:
@@ -161,8 +163,9 @@ with col_plan:
                 4. Nonsense Fluency must be exactly 21 pseudo-words. Provide a 2-step "detective_task" array.
                 5. ZERO PROFANITY in pseudo-words.
                 6. Provide exactly 8 distinct riddles for cards.
-                7. Word Sort categories MUST be short (1-2 words max, e.g., "-ed words", "Long A"). Do not use long phrases.
-                8. Output ONLY raw JSON. You MUST use this exact schema:
+                7. Word Sort categories MUST be EXTREMELY short (Max 10 characters, e.g., "-ed", "Long A"). NO SENTENCES.
+                8. Sentence Match halves MUST be very short (max 5 words per half) so they fit perfectly side-by-side on the page.
+                9. Output ONLY raw JSON. You MUST use this exact schema:
                 {{
                   "overview": "Phonics rule intro", 
                   "target_words": ["word1", "word2"],
@@ -287,7 +290,8 @@ def render_pdf(data, is_key=False):
                 pdf.ln(5)
 
                 w = 180 / len(cats)
-                pdf.set_font("Helvetica", "B", 12)
+                # FORMAT FIX: Shrank font to 10 for headers so they don't overlap
+                pdf.set_font("Helvetica", "B", 10) 
                 for c in cats: pdf.cell(w, 10, clean_text(c), 1, 0, 'C')
                 pdf.ln(); pdf.set_font("Helvetica", "", 12)
                 
@@ -311,10 +315,14 @@ def render_pdf(data, is_key=False):
             dr = r if is_key else random.sample(r, len(r))
             for i in range(len(l)):
                 pdf.set_x(15)
-                pdf.set_font("Helvetica", "", 13); pdf.cell(85, 12, clean_text(l[i]), 0, 0)
-                pdf.set_font("Courier", "", 10); pdf.cell(10, 12, "....", 0, 0, 'C')
+                # FORMAT FIX: Shrank font to 11 and adjusted width allowances
+                pdf.set_font("Helvetica", "", 11) 
+                pdf.cell(80, 12, clean_text(l[i]), 0, 0)
+                pdf.set_font("Courier", "", 10); pdf.cell(20, 12, ".......", 0, 0, 'C')
+                
                 if is_key: pdf.set_text_color(200, 0, 0)
-                pdf.cell(85, 12, clean_text(dr[i]) if i < len(dr) else "", 0, 1, 'R')
+                pdf.set_font("Helvetica", "", 11)
+                pdf.cell(80, 12, clean_text(dr[i]) if i < len(dr) else "", 0, 1, 'R')
                 pdf.set_text_color(0, 0, 0)
 
         elif a_type == "Sound Mapping":
