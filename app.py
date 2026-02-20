@@ -172,7 +172,7 @@ with st.sidebar:
             <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Help keep this tool free!</p>
             <div style="display: flex; justify-content: center; gap: 10px;">
                 <a href="https://venmo.com/u/BRADONI" target="_blank" style="background: #008CFF; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">Venmo</a>
-                <a href="https://paypal.me/YOUR_PAYPAL_USERNAME" target="_blank" style="background: #003087; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">PayPal</a>
+                <a href="https://paypal.me/WINTIMEPHONIX" target="_blank" style="background: #003087; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">PayPal</a>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -456,3 +456,4 @@ with col_res:
         if st.session_state.scroll_up:
             components.html("<script>window.parent.scrollTo({top: 0, behavior: 'smooth'});</script>", height=0)
             st.session_state.scroll_up = False
+
