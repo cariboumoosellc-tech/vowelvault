@@ -19,7 +19,7 @@ if "scroll_up" not in st.session_state: st.session_state.scroll_up = False
 APP_NAME = "WIN Time Phonics Builder"
 APP_EMOJI = "🎯" 
 SIDEBAR_TITLE = "🏫 WIN Time Architect"
-FOOTER_TEXT = "🚀 WIN Time Phonics Builder v1.8"
+FOOTER_TEXT = "🚀 WIN Time Phonics Builder v1.9"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 # ==========================================
@@ -143,6 +143,21 @@ def generate_tracker_pdf():
             
     return bytes(pdf.output())
 
+# Helper to convert color names to Pastel RGBs so text remains readable
+def get_color_rgb(color_name):
+    c = str(color_name).lower().strip()
+    if "red" in c: return (255, 153, 153), (0, 0, 0)
+    if "blue" in c: return (153, 204, 255), (0, 0, 0)
+    if "yellow" in c: return (255, 255, 153), (0, 0, 0)
+    if "green" in c: return (153, 255, 153), (0, 0, 0)
+    if "orange" in c: return (255, 204, 153), (0, 0, 0)
+    if "purple" in c: return (204, 153, 255), (0, 0, 0)
+    if "pink" in c: return (255, 153, 204), (0, 0, 0)
+    if "brown" in c: return (204, 178, 153), (0, 0, 0)
+    if "black" in c: return (80, 80, 80), (255, 255, 255) # Dark gray with white text
+    if "gray" in c or "grey" in c: return (200, 200, 200), (0, 0, 0)
+    return (255, 255, 255), (0, 0, 0) # Default White
+
 # --- 4. THE ARCHITECT SIDEBAR ---
 with st.sidebar:
     st.title(SIDEBAR_TITLE)
@@ -176,10 +191,9 @@ with st.sidebar:
             "4th+": ["Multisyllable", "Endings", "Mixed Review (All Types)"]
         }
         
-        # Now randomly selects from the 7 available activities
         chosen_acts = list(ACTIVITY_INFO.keys())
         random.shuffle(chosen_acts)
-        chosen_acts = chosen_acts[:5] # Keeps the packet from getting too huge
+        chosen_acts = chosen_acts[:5] 
         
         for act in chosen_acts:
             auto_cat = random.choice(grade_logic[grade])
@@ -264,7 +278,7 @@ with col_plan:
                 6. Provide exactly 8 distinct riddles for cards.
                 7. Word Sort categories MUST be EXTREMELY short (Max 10 characters).
                 8. Sentence Match halves must be short enough to fit side-by-side (max 7 words per half).
-                9. MYSTERY GRID (Color-by-Code): Generate exactly a 6x6 grid. Create a "legend" mapping 3-4 colors to either specific target words (e.g., if nonsense words requested, "Red": "blop", "Blue": "snig") OR phonics categories (e.g., "Red": "Closed Syllables", "Blue": "Open Syllables"). Fill the "grid_words" (6 arrays of 6 words) so that the colors form a simple hidden pixel-art picture (e.g., smiley face, heart, letter). Generate a matching "grid_colors" (6 arrays of 6 color names) showing the expected picture.
+                9. MYSTERY GRID (Color-by-Code): Generate exactly a 6x6 grid. Create a "legend" mapping 3-4 standard color names (e.g. "Red", "Blue", "Green", "Yellow", "Black", "Brown", "Orange", "Purple") to either specific target words or phonics categories. Fill the "grid_words" (6 arrays of 6 words) so the colors form a simple hidden pixel-art picture (e.g., smiley face, heart, letter). Generate a matching "grid_colors" using the FULL COLOR NAMES (e.g. "Red", not "R") matching the layout of the picture.
                 10. Output ONLY raw JSON. You MUST use this exact schema:
                 {{
                   "overview": "Phonics rule intro", 
@@ -285,7 +299,7 @@ with col_plan:
                          "mystery_grid": {{
                             "legend": {{"Red": "target 1", "Blue": "target 2", "Yellow": "target 3"}},
                             "grid_words": [["w1", "w2", "w3", "w4", "w5", "w6"], ["w1", "w2", "w3", "w4", "w5", "w6"], ["w1", "w2", "w3", "w4", "w5", "w6"], ["w1", "w2", "w3", "w4", "w5", "w6"], ["w1", "w2", "w3", "w4", "w5", "w6"], ["w1", "w2", "w3", "w4", "w5", "w6"]],
-                            "grid_colors": [["R", "B", "R", "B", "R", "B"], ["R", "B", "R", "B", "R", "B"], ["R", "B", "R", "B", "R", "B"], ["R", "B", "R", "B", "R", "B"], ["R", "B", "R", "B", "R", "B"], ["R", "B", "R", "B", "R", "B"]]
+                            "grid_colors": [["Red", "Blue", "Red", "Blue", "Red", "Blue"], ["Red", "Blue", "Red", "Blue", "Red", "Blue"], ["Red", "Blue", "Red", "Blue", "Red", "Blue"], ["Red", "Blue", "Red", "Blue", "Red", "Blue"], ["Red", "Blue", "Red", "Blue", "Red", "Blue"], ["Red", "Blue", "Red", "Blue", "Red", "Blue"]]
                          }}
                       }} 
                     }} 
@@ -461,36 +475,32 @@ def render_pdf(data, is_key=False):
             grid_data = content.get('mystery_grid', {})
             pdf.set_font("Helvetica", "B", 18); pdf.cell(0, 10, "Mystery Grid (Color-by-Code)", ln=True); pdf.ln(3)
             
-            # Print the Legend
             legend = grid_data.get('legend', {})
             pdf.set_font("Helvetica", "B", 12)
             legend_str = "   |   ".join([f"{k}: {v}" for k, v in legend.items()])
             pdf.multi_cell(0, 8, "Color Key:  " + clean_text(legend_str))
             pdf.ln(6)
             
-            # Draw the 6x6 Grid
             words = grid_data.get('grid_words', [])
             colors = grid_data.get('grid_colors', [])
             
-            # Center the grid (Page is 210mm wide. Grid is 6*30=180 wide. Margin=15 on each side)
             cell_w = 30
             cell_h = 20
             
             for r_idx in range(6):
-                pdf.set_x(15) # Stay aligned with margin
+                pdf.set_x(15) 
                 for c_idx in range(6):
                     word = clean_text(words[r_idx][c_idx]) if r_idx < len(words) and c_idx < len(words[r_idx]) else ""
                     color = clean_text(colors[r_idx][c_idx]) if r_idx < len(colors) and c_idx < len(colors[r_idx]) else ""
                     
                     if is_key:
-                        # Teacher Key: Word + First Letter of Color (e.g., blop (R))
+                        fill_rgb, text_rgb = get_color_rgb(color)
+                        pdf.set_fill_color(*fill_rgb)
+                        pdf.set_text_color(*text_rgb)
                         pdf.set_font("Helvetica", "B", 10)
-                        pdf.set_text_color(200, 0, 0)
-                        color_initial = color[:1].upper() if color else "?"
-                        pdf.cell(cell_w, cell_h, f"{word} ({color_initial})", 1, 0, 'C')
-                        pdf.set_text_color(0, 0, 0)
+                        pdf.cell(cell_w, cell_h, word, 1, 0, 'C', fill=True)
+                        pdf.set_text_color(0, 0, 0) # Reset text back to black for safety
                     else:
-                        # Student Packet: Just the word
                         pdf.set_font("Helvetica", "B", 11)
                         pdf.cell(cell_w, cell_h, word, 1, 0, 'C')
                 pdf.ln()
