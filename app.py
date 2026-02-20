@@ -13,7 +13,7 @@ if "build_queue" not in st.session_state: st.session_state.build_queue = []
 if "final_json" not in st.session_state: st.session_state.final_json = None
 if "scroll_up" not in st.session_state: st.session_state.scroll_up = False
 
-st.set_page_config(page_title="VowelVault Pro", layout="wide", page_icon="🏫")
+st.set_page_config(page_title="WIN Time Phonics", layout="wide", page_icon="🏫")
 
 # --- 2. PHONICS DATABASE & DESCRIPTIONS ---
 PHONICS_MENU = {
@@ -57,7 +57,7 @@ st.markdown("""
 
 # --- 4. THE ARCHITECT SIDEBAR ---
 with st.sidebar:
-    st.title("🏫 Architect")
+    st.title("🏫 WIN Time Architect")
     grade = st.selectbox("Grade (Interest)", ["1st", "2nd", "3rd", "4th+"])
     r_level = st.select_slider("Difficulty", options=["Beginning", "Intermediate", "Advanced"])
     
@@ -104,7 +104,7 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-    st.caption("🚀 **VowelVault Pro v1.2**")
+    st.caption("🚀 **WIN Time Phonics Builder v1.3**")
     st.info("Have a new activity idea? [Contact the Creator](mailto:your-email@example.com)")
 
 # --- 5. MAIN BUILDER ---
@@ -149,10 +149,11 @@ with col_plan:
                 1. Stories MUST be 3+ paragraphs and MUST have unique titles.
                 2. Comprehension questions MUST include the 'q' (question) and the 'a' (answer).
                 3. NO MARKDOWN ASTERISKS (**). Plain text only.
-                4. Nonsense Word Fluency must be exactly 21 decodable pseudo-words. You MUST also provide a 2-step "detective_task" array (e.g., "1. Circle the endings", "2. Box the multisyllabic words").
-                5. ZERO PROFANITY: Rigorously check all generated words (especially pseudo-words) to ensure they do not resemble profanity, slang, or anatomical terms.
+                4. Nonsense Fluency must be exactly 21 pseudo-words. Provide a 2-step "detective_task" array.
+                5. ZERO PROFANITY in pseudo-words.
                 6. Provide exactly 8 distinct riddles for cards.
-                7. Output ONLY raw JSON. You MUST use this exact schema:
+                7. Word Sort categories MUST be short (1-2 words max, e.g., "-ed words", "Long A"). Do not use long phrases.
+                8. Output ONLY raw JSON. You MUST use this exact schema:
                 {{
                   "overview": "Phonics rule intro", 
                   "target_words": ["word1", "word2"],
@@ -272,6 +273,7 @@ def render_pdf(data, is_key=False):
 
                 w = 180 / len(cats)
                 pdf.set_font("Helvetica", "B", 12)
+                # Reduced font size slightly for headers just to be safe
                 for c in cats: pdf.cell(w, 10, clean_text(c), 1, 0, 'C')
                 pdf.ln(); pdf.set_font("Helvetica", "", 12)
                 
@@ -317,10 +319,11 @@ def render_pdf(data, is_key=False):
             pdf.set_font("Helvetica", "B", 18); pdf.cell(0, 12, "Detective Riddle Cards", ln=True, align="C")
             cards = content.get('riddles', [])[:8]
             xs, ys = 10, 30
-            c_w, c_h = 90, 46 
+            # Reduced dimensions & row spacing to protect against margin page-breaks
+            c_w, c_h = 90, 42 
             for i, r in enumerate(cards):
                 col, row = i % 2, i // 2
-                x, y = xs + (col * 95), ys + (row * 48) 
+                x, y = xs + (col * 95), ys + (row * 45) 
                 pdf.rect(x, y, c_w, c_h)
                 pdf.set_xy(x+2, y+2); pdf.set_font("Helvetica", "B", 10); pdf.cell(0, 5, f"Riddle #{i+1}")
                 pdf.set_xy(x+2, y+8); pdf.set_font("Helvetica", "", 9)
@@ -358,4 +361,4 @@ with col_res:
             st.session_state.scroll_up = False
 
 # --- 8. DONATION ---
-st.markdown("<div class='donation-footer'><h3>☕ Support VowelVault</h3><p>Keep this free for teachers!</p><a href='https://venmo.com'>Venmo</a> | <a href='https://paypal.me'>PayPal</a></div>", unsafe_allow_html=True)
+st.markdown("<div class='donation-footer'><h3>☕ Support WIN Time Phonics</h3><p>Keep this free for teachers!</p><a href='https://venmo.com'>Venmo</a> | <a href='https://paypal.me'>PayPal</a></div>", unsafe_allow_html=True)
