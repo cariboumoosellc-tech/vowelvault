@@ -19,7 +19,7 @@ if "scroll_up" not in st.session_state: st.session_state.scroll_up = False
 APP_NAME = "WIN Time Phonics Builder"
 APP_EMOJI = "🎯" 
 SIDEBAR_TITLE = "🏫 WIN Time Architect"
-FOOTER_TEXT = "🚀 WIN Time Phonics v18.6"
+FOOTER_TEXT = "🚀 WIN Time Phonics v19.0"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 
@@ -93,26 +93,24 @@ def generate_tracker_pdf():
         ("High-Frequency Words", False)
     ]
     
-    row = 0
+    row_count = 0
     for s, is_h in skills:
         if is_h:
             pdf.set_font("Helvetica", "B", 11)
             pdf.set_fill_color(235, 235, 235)
             pdf.cell(190, 8, f" {s}", 1, 1, 'L', fill=True)
-            row = 0
+            row_count = 0
         else:
             pdf.set_font("Helvetica", "", 10)
-            # FIX: Using standard block statements so Streamlit doesn't print "None"
-            if row % 2 == 0:
+            if row_count % 2 == 0:
                 pdf.set_fill_color(250, 250, 250)
             else:
                 pdf.set_fill_color(255, 255, 255)
-            
             pdf.cell(100, 8, f" {s}", 1, 0, 'L', fill=True)
             pdf.cell(30, 8, "", 1, 0, 'C', fill=True)
             pdf.cell(30, 8, "", 1, 0, 'C', fill=True)
             pdf.cell(30, 8, "", 1, 1, 'C', fill=True)
-            row += 1
+            row_count += 1
     return bytes(pdf.output())
 
 def get_color_rgb(color_name):
@@ -183,22 +181,22 @@ with col_plan:
                 Plan: {st.session_state.build_queue}.
                 
                 STRICT RULES:
-                1. RIGOR: For 3rd/4th+ grade, use advanced, academic vocabulary. NO simple words like 'cat' or 'brave'. Use multisyllabic words even for simple patterns.
-                2. STORY: 3+ paragraphs. Keep story and questions on ONE page by using concise language.
-                3. MYSTERY GRID: Choose 4-7 colors. For each color, provide EXACTLY 6 unique words. 
-                4. SENTENCE MATCH: Max 6 words per half. Short headers for Word Sort.
-                5. OVERVIEW: Write a 3-4 sentence encouraging introduction explaining the specific phonics rule. Populate 'target_words' with 15-20 focus words used in this packet.
+                1. RIGOR: For 3rd/4th+ grade, use advanced vocabulary. NO simple words like 'cat'. 
+                2. STORY: Keep concise so it fits on one page. 
+                3. MYSTERY GRID: Choose 4 distinct colors. Generate EXACTLY 8 unique words for EACH color. 
+                4. WORD SORT: Categories MUST be 1 or 2 words maximum (e.g. "-ed" or "Long A"). Do NOT write sentences for headers.
+                5. SENTENCE MATCH: Halves MUST be under 6 words each.
                 6. JSON SAFETY: Do NOT use double quotes (") inside strings. Use single quotes (') for dialogue.
                 7. Output raw JSON ONLY:
                 {{
-                  "overview": "text", "target_words": ["word1", "word2"],
+                  "overview": "3 sentence intro.", "target_words": ["word1", "word2"],
                   "activities": [ {{
                     "type": "Exact Type", 
                     "content": {{
-                      "title": "text", "paragraphs": [], "questions": [{{"q":"?","a":""}}],
-                      "words": [], "detective_task": [], "sort_cats": {{"cat":[]}},
-                      "match_l": [], "match_r": [], "map_words": [], "riddles": [{{"clue1":"","ans":""}}],
-                      "mystery_grid": {{ "legend": {{"Red":"cat"}}, "color_words": {{"Red":[]}} }}
+                      "title": "text", "paragraphs": ["Para 1 text"], "questions": [{{"q":"?","a":""}}],
+                      "words": ["pseudo1"], "detective_task": ["1. Task"], "sort_cats": {{"Cat1":["w1"]}},
+                      "match_l": ["Left 1"], "match_r": ["Right 1"], "map_words": ["w1"], "riddles": [{{"clue1":"c1","clue2":"c2","clue3":"c3","ans":"a"}}],
+                      "mystery_grid": {{ "legend": {{"Red":"target 1", "Blue":"target 2"}}, "color_words": {{"Red":["w1","w2"]}} }}
                     }}
                   }} ]
                 }}
@@ -210,20 +208,19 @@ with col_plan:
                     st.session_state.scroll_up = True
                     st.rerun()
                 except Exception as e:
-                    st.error(f"⚠️ Generation error: {str(e)}. Please click Generate again.")
+                    st.error(f"⚠️ Generation error: {str(e)}. Please try clearing the plan and building again.")
 
 # --- 8. PDF RENDERER ---
 def clean_text(t): return str(t).replace("’","'").replace("“",'"').replace("”",'"').replace("**","")
 
 def render_pdf(data, is_key=False):
     pdf = FPDF()
-    pdf.set_auto_page_break(True, 15)
+    pdf.set_auto_page_break(True, margin=15)
     
     # ---------------------------------------------------------
-    # PAGE 1: THE DEDICATED COVER SHEET
+    # COVER PAGE
     # ---------------------------------------------------------
     pdf.add_page()
-    
     if is_key:
         pdf.set_font("Helvetica", "B", 12); pdf.set_text_color(200, 0, 0)
         pdf.cell(0, 10, "TEACHER ANSWER KEY", ln=True, align="R"); pdf.set_text_color(0,0,0)
@@ -232,59 +229,52 @@ def render_pdf(data, is_key=False):
         pdf.cell(0, 10, "Name: ___________________________________   Date: ___________", ln=True)
 
     pdf.ln(10)
-    pdf.set_font("Helvetica", "B", 26)
-    pdf.cell(0, 15, "WIN Time Phonics Packet", ln=True, align="C")
+    pdf.set_font("Helvetica", "B", 26); pdf.cell(0, 15, "WIN Time Phonics Packet", ln=True, align="C")
     pdf.ln(10)
 
-    # Section 1: Learning Focus
-    pdf.set_font("Helvetica", "B", 14)
-    pdf.cell(0, 8, "Learning Focus:", ln=True)
-    pdf.set_font("Helvetica", "", 12)
-    pdf.multi_cell(0, 6, clean_text(data.get("overview", "Practice your phonics skills with these targeted activities!")))
+    pdf.set_font("Helvetica", "B", 14); pdf.cell(0, 8, "Learning Focus:", ln=True)
+    pdf.set_font("Helvetica", "", 12); pdf.multi_cell(0, 6, clean_text(data.get("overview", "Practice targeted phonics skills.")))
     pdf.ln(10)
 
-    # Section 2: Target Word Bank
-    pdf.set_font("Helvetica", "B", 14)
-    pdf.cell(0, 8, "Target Word Bank:", ln=True)
+    pdf.set_font("Helvetica", "B", 14); pdf.cell(0, 8, "Target Word Bank:", ln=True)
     pdf.set_font("Helvetica", "", 12)
     target_list = [clean_text(w) for w in data.get("target_words", [])]
-    if target_list:
-        pdf.multi_cell(0, 6, "   |   ".join(target_list))
-    else:
-        pdf.cell(0, 6, "Words provided in activities.", ln=True)
+    if target_list: pdf.multi_cell(0, 6, "   |   ".join(target_list))
+    else: pdf.cell(0, 6, "Words provided in activities.", ln=True)
     pdf.ln(10)
 
-    # Section 3: Packet Checklist
-    pdf.set_font("Helvetica", "B", 14)
-    pdf.cell(0, 8, "Packet Checklist:", ln=True)
+    pdf.set_font("Helvetica", "B", 14); pdf.cell(0, 8, "Packet Checklist:", ln=True)
     pdf.set_font("Helvetica", "", 12)
     for i, act in enumerate(data.get("activities", [])):
-        act_name = clean_text(act.get("type", "Activity"))
-        pdf.cell(0, 8, f"[   ]  {i+1}. {act_name}", ln=True)
+        pdf.cell(0, 8, f"[   ]  {i+1}. {clean_text(act.get('type', 'Activity'))}", ln=True)
     
     # ---------------------------------------------------------
-    # SUBSEQUENT PAGES: THE ACTIVITIES
+    # ACTIVITIES
     # ---------------------------------------------------------
     for act in data.get("activities", []):
         a_type, content = act['type'], act['content']
+        pdf.add_page() # Force every activity to strictly start on a new page
         
-        # Every activity gets pushed to a new page so they don't overlap
-        pdf.add_page()
-        
+        # --- MYSTERY GRID ---
         if a_type == "Mystery Grid (Color-by-Code)":
-            pdf.rect(10, 10, 190, 277) # Full page border
+            pdf.rect(10, 10, 190, 277)
             pdf.set_font("Helvetica", "B", 20); pdf.cell(0, 15, "Aztec Quilt Mystery Grid", ln=True, align="C")
             
+            if not is_key:
+                pdf.set_font("Helvetica", "B", 12); pdf.cell(0, 10, " Name: ___________________________________", ln=True, align="L")
+            else:
+                pdf.set_font("Helvetica", "B", 14); pdf.set_text_color(200, 0, 0)
+                pdf.cell(0, 10, "TEACHER ANSWER KEY", ln=True, align="C"); pdf.set_text_color(0,0,0)
+
             grid_data = content.get('mystery_grid', {})
             legend = grid_data.get('legend', {})
             color_names = list(legend.keys())
             
-            # Print Legend
             pdf.set_font("Helvetica", "B", 10)
-            pdf.multi_cell(0, 8, "Legend: " + " | ".join([f"{k}: {v}" for k, v in legend.items()]), align="C")
+            legend_str = " | ".join([f"{k}: {v}" for k, v in legend.items()])
+            pdf.multi_cell(0, 8, "Legend: " + clean_text(legend_str), align="C")
             pdf.ln(5)
             
-            # Aztec/Quilt Patterns
             patterns = [
                 [[0,0,1,1,1,1,0,0],[0,1,2,2,2,2,1,0],[1,2,3,3,3,3,2,1],[1,2,3,0,0,3,2,1],[1,2,3,0,0,3,2,1],[1,2,3,3,3,3,2,1],[0,1,2,2,2,2,1,0],[0,0,1,1,1,1,0,0]],
                 [[0,1,0,1,0,1,0,1],[1,0,1,0,1,0,1,0],[0,1,2,2,2,2,1,0],[1,0,2,3,3,2,0,1],[0,1,2,3,3,2,1,0],[1,0,2,2,2,2,0,1],[0,1,0,1,0,1,0,1],[1,0,1,0,1,0,1,0]]
@@ -292,7 +282,6 @@ def render_pdf(data, is_key=False):
             chosen_pattern = random.choice(patterns)
             w_dict = grid_data.get('color_words', {})
             
-            # Render 8x8
             size = 22; start_x = (210 - (8 * size)) / 2
             for r in range(8):
                 pdf.set_x(start_x)
@@ -312,29 +301,35 @@ def render_pdf(data, is_key=False):
                 pdf.ln(size)
             continue
 
-        # Header for standard pages
+        # --- STANDARD HEADER ---
         if is_key:
             pdf.set_font("Helvetica", "B", 10); pdf.set_text_color(200, 0, 0)
             pdf.cell(0, 10, "TEACHER ANSWER KEY", ln=True, align="R"); pdf.set_text_color(0,0,0)
         else:
             pdf.set_font("Helvetica", "B", 10)
             pdf.cell(0, 8, "Name: ___________________________________", ln=True, align="R")
-            pdf.ln(2)
-
-        pdf.set_font("Helvetica", "B", 14); pdf.cell(0, 10, a_type, ln=True)
-        pdf.ln(2)
         
+        pdf.ln(2); pdf.set_font("Helvetica", "B", 14); pdf.cell(0, 10, a_type, ln=True); pdf.ln(2)
+        
+        # --- DECODABLE STORY ---
         if a_type == "Decodable Story":
             pdf.set_font("Helvetica", "B", 12); pdf.cell(0, 10, clean_text(content.get('title','')), ln=True, align="C")
             pdf.set_font("Helvetica", "", 11)
             for p in content.get('paragraphs', []): pdf.multi_cell(0, 6, clean_text(p)); pdf.ln(2)
+            
+            # FORMAT FIX: If story pushes too close to margin, force Evidence Check to new page
+            if pdf.get_y() > 220: pdf.add_page()
+            
             pdf.ln(5); pdf.set_font("Helvetica", "B", 11); pdf.cell(0, 8, "Evidence Check:", ln=True)
             pdf.set_font("Helvetica", "", 11)
             for q in content.get('questions', []):
-                pdf.multi_cell(0, 7, f"Q: {clean_text(q['q'])}"); 
-                if is_key: pdf.set_text_color(200,0,0); pdf.multi_cell(0, 7, f"A: {clean_text(q['a'])}"); pdf.set_text_color(0,0,0); pdf.ln(2)
-                else: pdf.ln(8)
+                pdf.multi_cell(0, 7, f"Q: {clean_text(q['q'])}")
+                if is_key: 
+                    pdf.set_text_color(200,0,0); pdf.multi_cell(0, 7, f"A: {clean_text(q['a'])}"); pdf.set_text_color(0,0,0); pdf.ln(2)
+                else: 
+                    pdf.ln(8)
 
+        # --- NONSENSE WORD FLUENCY ---
         elif a_type == "Nonsense Word Fluency":
             words = content.get('words', [])[:21]
             for i, word in enumerate(words):
@@ -347,6 +342,7 @@ def render_pdf(data, is_key=False):
                 for task in tasks:
                     pdf.set_x(15); pdf.multi_cell(0, 6, clean_text(task))
 
+        # --- WORD BANK SORT ---
         elif a_type == "Word Bank Sort":
             cats = list(content.get('sort_cats', {}).keys())
             if cats:
@@ -356,9 +352,12 @@ def render_pdf(data, is_key=False):
                 pdf.set_font("Helvetica", "", 13)
                 pdf.multi_cell(0, 8, "Word Bank:  " + "   |   ".join(all_words)); pdf.ln(5)
                 w = 180 / len(cats)
-                pdf.set_font("Helvetica", "B", 10) 
-                for c in cats: pdf.cell(w, 10, clean_text(c), 1, 0, 'C')
+                
+                # FORMAT FIX: Hard-slice headers to 20 chars max, drop font to 9 to prevent overlaps
+                pdf.set_font("Helvetica", "B", 9) 
+                for c in cats: pdf.cell(w, 10, clean_text(c)[:20], 1, 0, 'C')
                 pdf.ln(); pdf.set_font("Helvetica", "", 12)
+                
                 if not is_key:
                     for _ in range(6):
                         for _ in cats: pdf.cell(w, 12, "", 1, 0)
@@ -373,14 +372,21 @@ def render_pdf(data, is_key=False):
                         pdf.ln()
                     pdf.set_text_color(0, 0, 0)
 
+        # --- SENTENCE MATCH ---
         elif a_type == "Sentence Match":
             l, r = content.get('match_l', []), content.get('match_r', [])
             dr = r if is_key else random.sample(r, len(r))
             for i in range(len(l)):
-                pdf.cell(80, 10, clean_text(l[i]), 0); pdf.cell(20, 10, ".....", 0, 0, 'C')
-                if is_key: pdf.set_text_color(200,0,0)
-                pdf.cell(80, 10, clean_text(dr[i]) if i < len(dr) else "", 0, 1, 'R'); pdf.set_text_color(0,0,0)
+                # FORMAT FIX: Shrank font to 10, sliced text to 50 chars so it cannot cross the middle dots
+                pdf.set_font("Helvetica", "", 10) 
+                pdf.cell(85, 10, clean_text(l[i])[:50], 0, 0)
+                pdf.set_font("Courier", "", 10); pdf.cell(10, 10, ".......", 0, 0, 'C')
+                if is_key: pdf.set_text_color(200, 0, 0)
+                pdf.set_font("Helvetica", "", 10)
+                pdf.cell(85, 10, clean_text(dr[i])[:50] if i < len(dr) else "", 0, 1, 'R')
+                pdf.set_text_color(0, 0, 0)
 
+        # --- SOUND MAPPING ---
         elif a_type == "Sound Mapping":
             for word in content.get('map_words', []):
                 pdf.set_font("Helvetica", "B", 14); pdf.cell(50, 12, f"{clean_text(word)} -> ", 0, 0, 'R')
@@ -390,12 +396,17 @@ def render_pdf(data, is_key=False):
                     pdf.cell(20, 12, "", 1, 0); pdf.cell(20, 12, "", 1, 0); pdf.cell(20, 12, "", 1, 1)
                 pdf.ln(2)
 
+        # --- RIDDLE CARDS ---
         elif a_type == "Detective Riddle Cards":
             cards = content.get('riddles', [])[:8]
-            xs, ys = 10, 30; c_w, c_h = 90, 42 
+            # FORMAT FIX: Locked Y-coordinates globally so cards don't float off the page!
+            xs, ys = 15, 45 
+            c_w, c_h = 85, 45 
             for i, r in enumerate(cards):
-                col, row = i % 2, i // 2
-                x, y = xs + (col * 95), ys + (row * 45) + pdf.get_y() # Adjust Y based on header
+                col = i % 2
+                row = i // 2
+                x = xs + (col * 95)
+                y = ys + (row * 50) 
                 pdf.rect(x, y, c_w, c_h)
                 pdf.set_xy(x+2, y+2); pdf.set_font("Helvetica", "B", 10); pdf.cell(0, 5, f"Riddle #{i+1}")
                 pdf.set_xy(x+2, y+8); pdf.set_font("Helvetica", "", 9)
