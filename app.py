@@ -19,7 +19,7 @@ if "scroll_up" not in st.session_state: st.session_state.scroll_up = False
 APP_NAME = "WIN Time Phonics Builder"
 APP_EMOJI = "🎯" 
 SIDEBAR_TITLE = "🏫 WIN Time Architect"
-FOOTER_TEXT = "🚀 WIN Time Phonics Builder v2.2"
+FOOTER_TEXT = "🚀 WIN Time Phonics Builder v18.0"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 # ==========================================
@@ -92,7 +92,7 @@ def generate_tracker_pdf():
     skills = [
         ("Letter Names & Sounds", False), ("Short Vowels (CVC)", False),
         ("Consonant Blends (2-letter)", False), ("Three-Letter Blends", False),
-        ("Digraphs (sh, ch, th, wh, ck, ng)", False), ("Complex Consants", False),
+        ("Digraphs (sh, ch, th, wh, ck, ng)", False), ("Complex Consonants", False),
         ("Final Blends", False), ("Silent e (CVCe)", False),
         ("Vowel Teams (ai, ea, oa, ee)", False), ("Unpredictable Vowel Teams", False),
         ("R-Controlled Vowels", False), ("Diphthongs (oi, oy, ou, ow)", False),
@@ -220,7 +220,7 @@ with col_plan:
 
     if st.session_state.build_queue:
         if st.button("🚀 GENERATE WORKSHEET", type="primary", use_container_width=True):
-            with st.spinner("AI is crafting unique content... this may take up to 30 seconds..."):
+            with st.spinner("AI is crafting rigorous content... this may take up to 30 seconds..."):
                 seed = random.randint(1, 1000000)
                 all_targets = set()
                 for item in st.session_state.build_queue:
@@ -232,12 +232,12 @@ with col_plan:
                 Plan: {st.session_state.build_queue}.
                 
                 STRICT RULES:
-                1. Stories MUST be 3+ paragraphs and MUST have unique titles.
-                2. COMPLEXITY ENGINE: If grade is 3rd/4th+ or level is Intermediate/Advanced, use rigorous vocabulary.
-                3. Comprehension questions MUST include 'q' and 'a'. NO MARKDOWN ASTERISKS (**).
+                1. RIGOR ENGINE: If grade is 3rd/4th+ or level is Intermediate/Advanced, you MUST use rigorous, multi-syllabic academic vocabulary. DO NOT use simple words like 'cat' or 'brave'. 
+                2. STORIES: 3+ paragraphs. Keep it concise so it fits on one page. Comprehension questions MUST include 'q' and 'a'.
+                3. JSON SAFETY: Do NOT use double quotes (") inside your stories or strings. Use single quotes (') for dialogue. NO MARKDOWN ASTERISKS.
                 4. Nonsense Fluency must be exactly 21 pseudo-words with a 2-step "detective_task" array. ZERO PROFANITY.
                 5. Provide exactly 8 distinct riddles. Sort categories MUST be EXTREMELY short. Match halves must fit side-by-side.
-                6. MYSTERY GRID (Color-by-Code): Choose EXACTLY 3 or 4 distinct standard colors (e.g., Red, Blue, Green, Yellow, Orange, Purple, Pink, Brown). Map each color to a specific phonics rule/target. Generate an array of EXACTLY 10 unique words for EACH color.
+                6. MYSTERY GRID (Color-by-Code): Choose EXACTLY 3 or 4 distinct standard colors. Map each color to a specific phonics rule/target. Generate an array of EXACTLY 8 unique words for EACH color.
                 7. Output ONLY raw JSON. You MUST use this exact schema:
                 {{
                   "overview": "Phonics rule intro", 
@@ -257,7 +257,7 @@ with col_plan:
                          "riddles": [ {{"clue1": "c1", "clue2": "c2", "clue3": "c3", "ans": "a"}} ],
                          "mystery_grid": {{
                             "legend": {{"Red": "target 1", "Blue": "target 2", "Green": "target 3"}},
-                            "color_words": {{"Red": ["w1","w2","w3","w4","w5","w6","w7","w8","w9","w10"], "Blue": ["w1","w2","w3","w4","w5","w6","w7","w8","w9","w10"], "Green": ["w1","w2","w3","w4","w5","w6","w7","w8","w9","w10"]}}
+                            "color_words": {{"Red": ["w1","w2","w3","w4","w5","w6","w7","w8"], "Blue": ["w1","w2","w3","w4","w5","w6","w7","w8"], "Green": ["w1","w2","w3","w4","w5","w6","w7","w8"]}}
                          }}
                       }} 
                     }} 
@@ -267,16 +267,29 @@ with col_plan:
                 """
                 try:
                     model = genai.GenerativeModel("gemini-2.5-flash")
-                    response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
+                    # FIX: Increased output tokens so large packets don't get cut off!
+                    response = model.generate_content(
+                        prompt, 
+                        generation_config={
+                            "response_mime_type": "application/json",
+                            "max_output_tokens": 8192 
+                        }
+                    )
                     st.session_state.final_json = json.loads(response.text)
                     st.session_state.scroll_up = True
+                    st.rerun()
+                except json.JSONDecodeError:
+                    st.error("⚠️ The AI wrote so much that it lost its place! Please click Generate again.")
                 except Exception as e:
-                    st.error(f"⚠️ An error occurred during generation: {str(e)}")
+                    if "ResourceExhausted" in str(e) or "429" in str(e):
+                        st.error("🚦 The AI is moving too fast. Please wait a few seconds and click Generate again.")
+                    else:
+                        st.error(f"⚠️ An error occurred during generation: {str(e)}")
 
 # --- 6. BULLETPROOF PDF ENGINE WITH SANITIZER ---
 def clean_text(text):
     if not isinstance(text, str): return str(text)
-    replacements = {"’": "'", "‘": "'", "“": '"', "”": '"', "–": "-", "—": "--", "…": "...", "**": "", "*": ""}
+    replacements = {"’": "'", "‘": "'", "“": "'", "”": "'", "–": "-", "—": "--", "…": "...", "**": "", "*": ""}
     for bad_char, good_char in replacements.items(): text = text.replace(bad_char, good_char)
     return text
 
@@ -372,7 +385,7 @@ def render_pdf(data, is_key=False):
             w_dict = grid_data.get('color_words', {})
             word_trackers = {color: 0 for color in color_names}
             
-            # Grid Math: 8x8 Grid, cells are 22mm each (176mm total width, perfectly fits 210mm page)
+            # Grid Math: 8x8 Grid, cells are 22mm each
             cell_size = 22
             start_x = (210 - (8 * cell_size)) / 2 
             
@@ -392,7 +405,7 @@ def render_pdf(data, is_key=False):
                         fill_rgb, text_rgb = get_color_rgb(current_color)
                         pdf.set_fill_color(*fill_rgb)
                         pdf.set_text_color(*text_rgb)
-                        pdf.set_font("Helvetica", "B", 8) # Smaller font to fit 22mm box
+                        pdf.set_font("Helvetica", "B", 8) 
                         pdf.cell(cell_size, cell_size, word, 1, 0, 'C', fill=True)
                         pdf.set_text_color(0, 0, 0)
                     else:
