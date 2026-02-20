@@ -14,12 +14,12 @@ if "final_json" not in st.session_state: st.session_state.final_json = None
 if "scroll_up" not in st.session_state: st.session_state.scroll_up = False
 
 # ==========================================
-# 🎨 BRANDING SECTION (CHANGE THESE!)
+# 🎨 BRANDING SECTION
 # ==========================================
 APP_NAME = "WIN Time Phonics Builder"
-APP_EMOJI = "🎯" # This shows up in the browser tab!
+APP_EMOJI = "🎯" 
 SIDEBAR_TITLE = "🏫 WIN Time Architect"
-FOOTER_TEXT = "🚀 WIN Time Phonics Builder v1.5"
+FOOTER_TEXT = "🚀 WIN Time Phonics Builder v1.6"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 # ==========================================
@@ -158,13 +158,13 @@ with col_plan:
                 
                 STRICT RULES:
                 1. Stories MUST be 3+ paragraphs and MUST have unique titles.
-                2. Comprehension questions MUST include the 'q' (question) and the 'a' (answer).
-                3. NO MARKDOWN ASTERISKS (**). Plain text only.
-                4. Nonsense Fluency must be exactly 21 pseudo-words. Provide a 2-step "detective_task" array.
-                5. ZERO PROFANITY in pseudo-words.
+                2. COMPLEXITY ENGINE: If the grade is 3rd or 4th+, or the level is Intermediate/Advanced, you MUST use rigorous, multi-syllabic vocabulary and complex/compound sentence structures across ALL activities (stories, mapping, sentence matching). Do NOT use simplistic 1st-grade words (like 'cat' or 'brave') unless completely unavoidable. Make the texts intellectually stimulating for older students.
+                3. Comprehension questions MUST include the 'q' (question) and the 'a' (answer).
+                4. NO MARKDOWN ASTERISKS (**). Plain text only.
+                5. Nonsense Fluency must be exactly 21 pseudo-words. Provide a 2-step "detective_task" array.
                 6. Provide exactly 8 distinct riddles for cards.
                 7. Word Sort categories MUST be EXTREMELY short (Max 10 characters, e.g., "-ed", "Long A"). NO SENTENCES.
-                8. Sentence Match halves MUST be very short (max 5 words per half) so they fit perfectly side-by-side on the page.
+                8. Sentence Match halves must be syntactically complex but short enough to fit side-by-side (max 7 words per half).
                 9. Output ONLY raw JSON. You MUST use this exact schema:
                 {{
                   "overview": "Phonics rule intro", 
@@ -239,25 +239,26 @@ def render_pdf(data, is_key=False):
 
         if a_type == "Decodable Story":
             title_text = clean_text(content.get('title', 'Decodable Story'))
-            pdf.set_font("Helvetica", "B", 22); pdf.cell(0, 15, title_text, ln=True, align="C")
-            pdf.set_font("Helvetica", "", 14)
+            # FORMAT FIX: Compressed title and body fonts to fit on one page
+            pdf.set_font("Helvetica", "B", 18); pdf.cell(0, 10, title_text, ln=True, align="C")
+            pdf.set_font("Helvetica", "", 12) 
             for para in content.get('paragraphs', []):
                 pdf.set_x(15)
-                pdf.multi_cell(0, 8, clean_text(para))
-                pdf.ln(4)
+                pdf.multi_cell(0, 6, clean_text(para))
+                pdf.ln(3)
             
-            pdf.ln(5); pdf.set_font("Helvetica", "B", 18); pdf.cell(0, 10, "Evidence Check", ln=True)
-            pdf.set_font("Helvetica", "", 14)
+            pdf.ln(4); pdf.set_font("Helvetica", "B", 14); pdf.cell(0, 8, "Evidence Check", ln=True)
+            pdf.set_font("Helvetica", "", 12)
             for q_data in content.get('questions', []):
                 q_text = clean_text(q_data.get('q', str(q_data)) if isinstance(q_data, dict) else str(q_data))
                 a_text = clean_text(q_data.get('a', 'Refer to text.') if isinstance(q_data, dict) else 'Refer to text.')
                 
-                pdf.set_x(15); pdf.set_font("Helvetica", "B", 14); pdf.multi_cell(0, 8, q_text)
+                pdf.set_x(15); pdf.set_font("Helvetica", "B", 12); pdf.multi_cell(0, 6, q_text)
                 if is_key:
-                    pdf.set_x(15); pdf.set_font("Helvetica", "I", 12); pdf.set_text_color(200, 0, 0)
-                    pdf.multi_cell(0, 7, f"Answer: {a_text}"); pdf.set_text_color(0, 0, 0); pdf.ln(3)
+                    pdf.set_x(15); pdf.set_font("Helvetica", "I", 11); pdf.set_text_color(200, 0, 0)
+                    pdf.multi_cell(0, 6, f"Answer: {a_text}"); pdf.set_text_color(0, 0, 0); pdf.ln(2)
                 else:
-                    pdf.ln(12)
+                    pdf.ln(6) # Dramatically reduced white space between questions
 
         elif a_type == "Nonsense Word Fluency":
             pdf.set_font("Helvetica", "B", 18); pdf.cell(0, 10, "Decoding Drills (Nonsense Words)", ln=True); pdf.ln(5)
@@ -290,7 +291,6 @@ def render_pdf(data, is_key=False):
                 pdf.ln(5)
 
                 w = 180 / len(cats)
-                # FORMAT FIX: Shrank font to 10 for headers so they don't overlap
                 pdf.set_font("Helvetica", "B", 10) 
                 for c in cats: pdf.cell(w, 10, clean_text(c), 1, 0, 'C')
                 pdf.ln(); pdf.set_font("Helvetica", "", 12)
@@ -315,14 +315,13 @@ def render_pdf(data, is_key=False):
             dr = r if is_key else random.sample(r, len(r))
             for i in range(len(l)):
                 pdf.set_x(15)
-                # FORMAT FIX: Shrank font to 11 and adjusted width allowances
                 pdf.set_font("Helvetica", "", 11) 
-                pdf.cell(80, 12, clean_text(l[i]), 0, 0)
-                pdf.set_font("Courier", "", 10); pdf.cell(20, 12, ".......", 0, 0, 'C')
+                pdf.cell(85, 10, clean_text(l[i]), 0, 0)
+                pdf.set_font("Courier", "", 10); pdf.cell(10, 10, ".......", 0, 0, 'C')
                 
                 if is_key: pdf.set_text_color(200, 0, 0)
                 pdf.set_font("Helvetica", "", 11)
-                pdf.cell(80, 12, clean_text(dr[i]) if i < len(dr) else "", 0, 1, 'R')
+                pdf.cell(85, 10, clean_text(dr[i]) if i < len(dr) else "", 0, 1, 'R')
                 pdf.set_text_color(0, 0, 0)
 
         elif a_type == "Sound Mapping":
