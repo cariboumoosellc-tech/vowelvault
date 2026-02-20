@@ -22,9 +22,11 @@ PHONICS_MENU = {
     "Consonant Digraphs": ["sh", "ch", "th", "wh", "ck", "Mixed Digraphs"],
     "Consonant Blends": ["L-Blends", "R-Blends", "S-Blends", "Final Blends"],
     "Magic E (CVCe)": ["a-e", "i-e", "o-e", "u-e", "Mixed Magic E"],
-    "R-Controlled Vowels": ["ar", "or", "er", "ir", "ur", "Mixed Bossy R"],
+    "Vowel r": ["ar", "or", "er", "ir", "ur", "Mixed Vowel r"],
     "Predictable Vowel Teams": ["Long A (ai, ay)", "Long E (ee, ea)", "Long O (oa, ow)", "Long I (igh, ie)"],
-    "Variant Vowel Teams": ["/ow/ (ou, ow)", "/oy/ (oi, oy)", "/oo/ (oo, ew)", "/aw/ (au, aw)"]
+    "Variant Vowel Teams": ["/ow/ (ou, ow)", "/oy/ (oi, oy)", "/oo/ (oo, ew)", "/aw/ (au, aw)"],
+    "Multisyllable": ["closed/closed", "silent e", "open", "vowel team", "consonant le", "vowel r"],
+    "Endings": ["ed", "ing", "s", "es", "er", "est"]
 }
 
 ACTIVITY_INFO = {
@@ -56,7 +58,7 @@ st.markdown("""
 # --- 4. THE ARCHITECT SIDEBAR ---
 with st.sidebar:
     st.title("🏫 Architect")
-    grade = st.selectbox("Grade (Interest)", ["K", "1st", "2nd", "3rd", "4th+"])
+    grade = st.selectbox("Grade (Interest)", ["1st", "2nd", "3rd", "4th+"])
     r_level = st.select_slider("Difficulty", options=["Beginning", "Intermediate", "Advanced"])
     
     sel_cat = st.selectbox("Phonics Category", list(PHONICS_MENU.keys()))
@@ -69,7 +71,7 @@ with st.sidebar:
     with st.popover("❔ What is this?", use_container_width=True):
         st.markdown(ACTIVITY_INFO[add_type])
     
-    add_nonsense = st.checkbox("Include Nonsense Words")
+    add_nonsense = st.checkbox("Include Nonsense Words", value=(add_type == "Nonsense Word Fluency"))
     
     if st.button("➕ Add to Plan", use_container_width=True):
         st.session_state.build_queue.append({
@@ -77,10 +79,33 @@ with st.sidebar:
             "cat": sel_cat, "sounds": sel_targets
         })
 
+    if st.button("🎲 Choose For Me", use_container_width=True):
+        st.session_state.build_queue = []
+        grade_logic = {
+            "1st": ["CVC (Short Vowels)", "Consonant Digraphs", "Consonant Blends"],
+            "2nd": ["Magic E (CVCe)", "Vowel r", "Predictable Vowel Teams"],
+            "3rd": ["Variant Vowel Teams", "Multisyllable", "Endings"],
+            "4th+": ["Multisyllable", "Endings", "Mixed Review (All Types)"]
+        }
+        auto_cat = random.choice(grade_logic[grade])
+        auto_target = [random.choice(PHONICS_MENU[auto_cat])]
+        acts_pool = ["Nonsense Word Fluency", "Word Bank Sort", "Sentence Match", "Sound Mapping", "Detective Riddle Cards"]
+        chosen_acts = ["Decodable Story"] + random.sample(acts_pool, 3)
+        for act in chosen_acts:
+            st.session_state.build_queue.append({
+                "type": act, "nonsense": (act == "Nonsense Word Fluency"), 
+                "id": str(uuid.uuid4()), "cat": auto_cat, "sounds": auto_target
+            })
+        st.rerun()
+
     if st.button("🗑️ Clear Plan", use_container_width=True):
         st.session_state.build_queue = []
         st.session_state.final_json = None
         st.rerun()
+
+    st.divider()
+    st.caption("🚀 **VowelVault Pro v1.2**")
+    st.info("Have a new activity idea? [Contact the Creator](mailto:your-email@example.com)")
 
 # --- 5. MAIN BUILDER ---
 col_plan, col_res = st.columns([1.5, 1])
@@ -88,7 +113,7 @@ col_plan, col_res = st.columns([1.5, 1])
 with col_plan:
     st.header("📝 Worksheet Plan")
     if not st.session_state.build_queue:
-        st.info("Queue is empty. Add activities from the sidebar!")
+        st.info("Queue is empty. Build a plan manually or click 'Choose For Me'!")
     else:
         for i in range(0, len(st.session_state.build_queue), 4):
             cols = st.columns(4)
@@ -111,7 +136,11 @@ with col_plan:
         if st.button("🚀 GENERATE WORKSHEET", type="primary", use_container_width=True):
             with st.spinner("AI is crafting unique content..."):
                 seed = random.randint(1, 1000000)
-                targets_text = ", ".join(sel_targets)
+                all_targets = set()
+                for item in st.session_state.build_queue:
+                    all_targets.update(item['sounds'])
+                targets_text = ", ".join(list(all_targets))
+                
                 prompt = f"""
                 You are an OG Reading Specialist. Create a {grade} worksheet ({r_level} level) targeting {targets_text}.
                 Plan: {st.session_state.build_queue}.
@@ -120,7 +149,7 @@ with col_plan:
                 1. Stories MUST be 3+ paragraphs and MUST have unique titles.
                 2. Comprehension questions MUST include the 'q' (question) and the 'a' (answer).
                 3. NO MARKDOWN ASTERISKS (**). Plain text only.
-                4. Nonsense Word Fluency must be exactly 21 decodable pseudo-words. You MUST also provide a 2-step "detective_task" array (e.g., "1. Circle the vowel teams", "2. Underline words with Long E").
+                4. Nonsense Word Fluency must be exactly 21 decodable pseudo-words. You MUST also provide a 2-step "detective_task" array (e.g., "1. Circle the endings", "2. Box the multisyllabic words").
                 5. ZERO PROFANITY: Rigorously check all generated words (especially pseudo-words) to ensure they do not resemble profanity, slang, or anatomical terms.
                 6. Provide exactly 8 distinct riddles for cards.
                 7. Output ONLY raw JSON. You MUST use this exact schema:
@@ -218,14 +247,10 @@ def render_pdf(data, is_key=False):
                 pdf.set_font("Helvetica", "B", 24)
                 pdf.cell(60, 20, clean_text(word), 1, (i + 1) % 3 == 0, 'C')
             
-            # THE NEW DETECTIVE TASK BLOCK
             tasks = content.get('detective_task', [])
             if tasks:
-                pdf.ln(10)
-                pdf.set_x(15)
-                pdf.set_font("Helvetica", "B", 14)
-                pdf.cell(0, 8, "DETECTIVE TASK:", ln=True)
-                pdf.set_font("Helvetica", "", 12)
+                pdf.ln(10); pdf.set_x(15); pdf.set_font("Helvetica", "B", 14)
+                pdf.cell(0, 8, "DETECTIVE TASK:", ln=True); pdf.set_font("Helvetica", "", 12)
                 for task in tasks:
                     pdf.set_x(15)
                     pdf.multi_cell(0, 6, clean_text(task))
