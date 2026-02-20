@@ -19,7 +19,7 @@ if "scroll_up" not in st.session_state: st.session_state.scroll_up = False
 APP_NAME = "WIN Time Phonics Builder"
 APP_EMOJI = "🎯" 
 SIDEBAR_TITLE = "🏫 WIN Time Architect"
-FOOTER_TEXT = "🚀 WIN Time Phonics Builder v2.1"
+FOOTER_TEXT = "🚀 WIN Time Phonics Builder v2.2"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 # ==========================================
@@ -45,7 +45,7 @@ ACTIVITY_INFO = {
     "Sentence Match": "🔗 Sentence Match: 5 sentence halves to connect.",
     "Sound Mapping": "🟦 Mapping: Segment words into phoneme boxes.",
     "Detective Riddle Cards": "🔍 8 cards per page with 3 logic clues each.",
-    "Mystery Grid (Color-by-Code)": "🎨 A FULL-PAGE 6x6 dynamic geometric coloring grid (4 to 7 colors)."
+    "Mystery Grid (Color-by-Code)": "🎨 A FULL-PAGE 8x8 Aztec/Quilt geometric coloring grid."
 }
 
 # --- 3. CUSTOM UI STYLING & PDF HELPERS ---
@@ -237,7 +237,7 @@ with col_plan:
                 3. Comprehension questions MUST include 'q' and 'a'. NO MARKDOWN ASTERISKS (**).
                 4. Nonsense Fluency must be exactly 21 pseudo-words with a 2-step "detective_task" array. ZERO PROFANITY.
                 5. Provide exactly 8 distinct riddles. Sort categories MUST be EXTREMELY short. Match halves must fit side-by-side.
-                6. MYSTERY GRID (Color-by-Code): Choose BETWEEN 4 AND 7 distinct standard colors (e.g., Red, Blue, Green, Yellow, Orange, Purple, Pink, Brown). Map each color to a specific phonics rule/target. Generate an array of EXACTLY 10 unique words for EACH color.
+                6. MYSTERY GRID (Color-by-Code): Choose EXACTLY 3 or 4 distinct standard colors (e.g., Red, Blue, Green, Yellow, Orange, Purple, Pink, Brown). Map each color to a specific phonics rule/target. Generate an array of EXACTLY 10 unique words for EACH color.
                 7. Output ONLY raw JSON. You MUST use this exact schema:
                 {{
                   "overview": "Phonics rule intro", 
@@ -256,8 +256,8 @@ with col_plan:
                          "map_words": ["w1", "w2"],
                          "riddles": [ {{"clue1": "c1", "clue2": "c2", "clue3": "c3", "ans": "a"}} ],
                          "mystery_grid": {{
-                            "legend": {{"Red": "target 1", "Blue": "target 2", "Green": "target 3", "Yellow": "target 4"}},
-                            "color_words": {{"Red": ["w1","w2","w3","w4","w5","w6","w7","w8","w9","w10"], "Blue": ["w1","w2","w3","w4","w5","w6","w7","w8","w9","w10"], "Green": ["w1","w2","w3","w4","w5","w6","w7","w8","w9","w10"], "Yellow": ["w1","w2","w3","w4","w5","w6","w7","w8","w9","w10"]}}
+                            "legend": {{"Red": "target 1", "Blue": "target 2", "Green": "target 3"}},
+                            "color_words": {{"Red": ["w1","w2","w3","w4","w5","w6","w7","w8","w9","w10"], "Blue": ["w1","w2","w3","w4","w5","w6","w7","w8","w9","w10"], "Green": ["w1","w2","w3","w4","w5","w6","w7","w8","w9","w10"]}}
                          }}
                       }} 
                     }} 
@@ -310,7 +310,7 @@ def render_pdf(data, is_key=False):
             pdf.set_line_width(0.2) 
             
             pdf.set_font("Helvetica", "B", 24)
-            pdf.cell(0, 20, "Color-by-Code: Mystery Grid", ln=True, align="C")
+            pdf.cell(0, 20, "Color-by-Code: Aztec Quilt", ln=True, align="C")
             
             if not is_key:
                 pdf.set_font("Helvetica", "B", 12)
@@ -324,39 +324,66 @@ def render_pdf(data, is_key=False):
             grid_data = content.get('mystery_grid', {})
             legend = grid_data.get('legend', {})
             color_names = list(legend.keys())
-            N = max(1, len(color_names)) # The number of colors the AI chose!
             
             # Print Legend
-            pdf.set_font("Helvetica", "B", 12)
+            pdf.set_font("Helvetica", "B", 11)
             legend_str = "    |    ".join([f"{k}: {v}" for k, v in legend.items()])
             pdf.multi_cell(0, 8, "LEGEND:  " + clean_text(legend_str), align="C")
             pdf.ln(8)
             
-            # Dynamic Mathematical Geometric Patterns!
-            # These formulas create stunning, symmetrical patterns regardless of color count
-            pattern_funcs = [
-                lambda r, c: (r + c) % N, # Diagonal Stripes
-                lambda r, c: (abs(r - c)) % N, # Corner Radiating
-                lambda r, c: int(abs(r - 2.5) + abs(c - 2.5)) % N, # Concentric Diamonds
-                lambda r, c: (r + int(abs(c - 2.5))) % N # Aztec-style Chevrons
+            # Hardcoded 8x8 Aztec and Quilt Star Patterns
+            patterns = [
+                # Aztec Diamond Star (Colors 0, 1, 2)
+                [
+                    [0, 0, 0, 1, 1, 0, 0, 0],
+                    [0, 0, 1, 2, 2, 1, 0, 0],
+                    [0, 1, 1, 1, 1, 1, 1, 0],
+                    [1, 2, 1, 0, 0, 1, 2, 1],
+                    [1, 2, 1, 0, 0, 1, 2, 1],
+                    [0, 1, 1, 1, 1, 1, 1, 0],
+                    [0, 0, 1, 2, 2, 1, 0, 0],
+                    [0, 0, 0, 1, 1, 0, 0, 0]
+                ],
+                # Woven Quilt Star (Colors 0, 1, 2)
+                [
+                    [0, 0, 1, 0, 0, 1, 0, 0],
+                    [0, 1, 1, 1, 1, 1, 1, 0],
+                    [1, 1, 2, 1, 1, 2, 1, 1],
+                    [0, 1, 1, 2, 2, 1, 1, 0],
+                    [0, 1, 1, 2, 2, 1, 1, 0],
+                    [1, 1, 2, 1, 1, 2, 1, 1],
+                    [0, 1, 1, 1, 1, 1, 1, 0],
+                    [0, 0, 1, 0, 0, 1, 0, 0]
+                ],
+                # Aztec Step Border (Colors 0, 1, 2, 3)
+                [
+                    [1, 0, 0, 3, 3, 0, 0, 1],
+                    [1, 1, 0, 0, 0, 0, 1, 1],
+                    [0, 1, 1, 2, 2, 1, 1, 0],
+                    [3, 0, 1, 2, 2, 1, 0, 3],
+                    [3, 0, 1, 2, 2, 1, 0, 3],
+                    [0, 1, 1, 2, 2, 1, 1, 0],
+                    [1, 1, 0, 0, 0, 0, 1, 1],
+                    [1, 0, 0, 3, 3, 0, 0, 1]
+                ]
             ]
-            chosen_func = random.choice(pattern_funcs)
             
+            chosen_pattern = random.choice(patterns)
             w_dict = grid_data.get('color_words', {})
             word_trackers = {color: 0 for color in color_names}
             
-            # Huge Grid Math
-            cell_size = 28
-            start_x = (210 - (6 * cell_size)) / 2 
+            # Grid Math: 8x8 Grid, cells are 22mm each (176mm total width, perfectly fits 210mm page)
+            cell_size = 22
+            start_x = (210 - (8 * cell_size)) / 2 
             
-            for r in range(6):
+            for r in range(8):
                 pdf.set_x(start_x)
-                for c in range(6):
-                    # Python automatically maps the cell to a color index
-                    color_idx = chosen_func(r, c)
+                for c in range(8):
+                    # Ensure color index matches the number of colors generated by the AI
+                    color_idx = chosen_pattern[r][c] % max(1, len(color_names))
                     current_color = color_names[color_idx]
                     
-                    # Pull the next word for that specific color
+                    # Pull next word
                     c_list = w_dict.get(current_color, ["word"])
                     word = clean_text(c_list[word_trackers[current_color] % max(1, len(c_list))])
                     word_trackers[current_color] += 1
@@ -365,11 +392,11 @@ def render_pdf(data, is_key=False):
                         fill_rgb, text_rgb = get_color_rgb(current_color)
                         pdf.set_fill_color(*fill_rgb)
                         pdf.set_text_color(*text_rgb)
-                        pdf.set_font("Helvetica", "B", 9) # slightly smaller font for long words
+                        pdf.set_font("Helvetica", "B", 8) # Smaller font to fit 22mm box
                         pdf.cell(cell_size, cell_size, word, 1, 0, 'C', fill=True)
                         pdf.set_text_color(0, 0, 0)
                     else:
-                        pdf.set_font("Helvetica", "B", 10)
+                        pdf.set_font("Helvetica", "B", 9)
                         pdf.cell(cell_size, cell_size, word, 1, 0, 'C')
                 pdf.ln(cell_size)
             first_page = False 
