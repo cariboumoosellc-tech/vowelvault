@@ -19,7 +19,7 @@ if "scroll_up" not in st.session_state: st.session_state.scroll_up = False
 APP_NAME = "WIN Time Phonics Builder"
 APP_EMOJI = "🎯" 
 SIDEBAR_TITLE = "🏫 WIN Time Architect"
-FOOTER_TEXT = "🚀 WIN Time Phonics Builder v2.0"
+FOOTER_TEXT = "🚀 WIN Time Phonics Builder v2.1"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 # ==========================================
@@ -45,7 +45,7 @@ ACTIVITY_INFO = {
     "Sentence Match": "🔗 Sentence Match: 5 sentence halves to connect.",
     "Sound Mapping": "🟦 Mapping: Segment words into phoneme boxes.",
     "Detective Riddle Cards": "🔍 8 cards per page with 3 logic clues each.",
-    "Mystery Grid (Color-by-Code)": "🎨 A FULL-PAGE 6x6 geometric coloring grid."
+    "Mystery Grid (Color-by-Code)": "🎨 A FULL-PAGE 6x6 dynamic geometric coloring grid (4 to 7 colors)."
 }
 
 # --- 3. CUSTOM UI STYLING & PDF HELPERS ---
@@ -92,7 +92,7 @@ def generate_tracker_pdf():
     skills = [
         ("Letter Names & Sounds", False), ("Short Vowels (CVC)", False),
         ("Consonant Blends (2-letter)", False), ("Three-Letter Blends", False),
-        ("Digraphs (sh, ch, th, wh, ck, ng)", False), ("Complex Consonants", False),
+        ("Digraphs (sh, ch, th, wh, ck, ng)", False), ("Complex Consants", False),
         ("Final Blends", False), ("Silent e (CVCe)", False),
         ("Vowel Teams (ai, ea, oa, ee)", False), ("Unpredictable Vowel Teams", False),
         ("R-Controlled Vowels", False), ("Diphthongs (oi, oy, ou, ow)", False),
@@ -237,7 +237,7 @@ with col_plan:
                 3. Comprehension questions MUST include 'q' and 'a'. NO MARKDOWN ASTERISKS (**).
                 4. Nonsense Fluency must be exactly 21 pseudo-words with a 2-step "detective_task" array. ZERO PROFANITY.
                 5. Provide exactly 8 distinct riddles. Sort categories MUST be EXTREMELY short. Match halves must fit side-by-side.
-                6. MYSTERY GRID (Color-by-Code): Do NOT build the grid. Choose EXACTLY 2 distinct standard colors (e.g., "Red" and "Blue"). Assign a targeted phonics rule/target to each color. Generate an array of EXACTLY 18 unique words for Color 1, and 18 unique words for Color 2.
+                6. MYSTERY GRID (Color-by-Code): Choose BETWEEN 4 AND 7 distinct standard colors (e.g., Red, Blue, Green, Yellow, Orange, Purple, Pink, Brown). Map each color to a specific phonics rule/target. Generate an array of EXACTLY 10 unique words for EACH color.
                 7. Output ONLY raw JSON. You MUST use this exact schema:
                 {{
                   "overview": "Phonics rule intro", 
@@ -256,8 +256,8 @@ with col_plan:
                          "map_words": ["w1", "w2"],
                          "riddles": [ {{"clue1": "c1", "clue2": "c2", "clue3": "c3", "ans": "a"}} ],
                          "mystery_grid": {{
-                            "legend": {{"Red": "target 1", "Blue": "target 2"}},
-                            "color_words": {{"Red": ["w1","w2","w3","w4","w5","w6","w7","w8","w9","w10","w11","w12","w13","w14","w15","w16","w17","w18"], "Blue": ["w1","w2","w3","w4","w5","w6","w7","w8","w9","w10","w11","w12","w13","w14","w15","w16","w17","w18"]}}
+                            "legend": {{"Red": "target 1", "Blue": "target 2", "Green": "target 3", "Yellow": "target 4"}},
+                            "color_words": {{"Red": ["w1","w2","w3","w4","w5","w6","w7","w8","w9","w10"], "Blue": ["w1","w2","w3","w4","w5","w6","w7","w8","w9","w10"], "Green": ["w1","w2","w3","w4","w5","w6","w7","w8","w9","w10"], "Yellow": ["w1","w2","w3","w4","w5","w6","w7","w8","w9","w10"]}}
                          }}
                       }} 
                     }} 
@@ -304,10 +304,10 @@ def render_pdf(data, is_key=False):
         # Mystery Grid gets a completely isolated, bordered page
         if a_type == "Mystery Grid (Color-by-Code)":
             pdf.add_page()
-            # Draw a thick outer border for the coloring page
+            # Thick outer border
             pdf.set_line_width(0.8)
             pdf.rect(10, 10, 190, 277)
-            pdf.set_line_width(0.2) # reset line width
+            pdf.set_line_width(0.2) 
             
             pdf.set_font("Helvetica", "B", 24)
             pdf.cell(0, 20, "Color-by-Code: Mystery Grid", ln=True, align="C")
@@ -324,63 +324,56 @@ def render_pdf(data, is_key=False):
             grid_data = content.get('mystery_grid', {})
             legend = grid_data.get('legend', {})
             color_names = list(legend.keys())
+            N = max(1, len(color_names)) # The number of colors the AI chose!
             
             # Print Legend
-            pdf.set_font("Helvetica", "B", 14)
-            legend_str = "    |    ".join([f"Color {k}: {v}" for k, v in legend.items()])
-            pdf.multi_cell(0, 10, "LEGEND:  " + clean_text(legend_str), align="C")
-            pdf.ln(10)
+            pdf.set_font("Helvetica", "B", 12)
+            legend_str = "    |    ".join([f"{k}: {v}" for k, v in legend.items()])
+            pdf.multi_cell(0, 8, "LEGEND:  " + clean_text(legend_str), align="C")
+            pdf.ln(8)
             
-            # Hardcoded Geometric Patterns (0 = Color1, 1 = Color2)
-            patterns = [
-                # Checkerboard
-                [[0,1,0,1,0,1], [1,0,1,0,1,0], [0,1,0,1,0,1], [1,0,1,0,1,0], [0,1,0,1,0,1], [1,0,1,0,1,0]],
-                # Inner Framed Box
-                [[0,0,0,0,0,0], [0,1,1,1,1,0], [0,1,0,0,1,0], [0,1,0,0,1,0], [0,1,1,1,1,0], [0,0,0,0,0,0]],
-                # Diagonal 'X'
-                [[1,0,0,0,0,1], [0,1,0,0,1,0], [0,0,1,1,0,0], [0,0,1,1,0,0], [0,1,0,0,1,0], [1,0,0,0,0,1]]
+            # Dynamic Mathematical Geometric Patterns!
+            # These formulas create stunning, symmetrical patterns regardless of color count
+            pattern_funcs = [
+                lambda r, c: (r + c) % N, # Diagonal Stripes
+                lambda r, c: (abs(r - c)) % N, # Corner Radiating
+                lambda r, c: int(abs(r - 2.5) + abs(c - 2.5)) % N, # Concentric Diamonds
+                lambda r, c: (r + int(abs(c - 2.5))) % N # Aztec-style Chevrons
             ]
-            chosen_pattern = random.choice(patterns)
+            chosen_func = random.choice(pattern_funcs)
             
-            # Extract words safely
-            c1 = color_names[0] if len(color_names) > 0 else "White"
-            c2 = color_names[1] if len(color_names) > 1 else "Black"
             w_dict = grid_data.get('color_words', {})
-            list1 = w_dict.get(c1, ["word"])
-            list2 = w_dict.get(c2, ["word"])
+            word_trackers = {color: 0 for color in color_names}
             
-            idx1, idx2 = 0, 0
-            
-            # Huge Grid Math (6 squares, 28mm each = 168mm wide. Centered on 210mm page)
+            # Huge Grid Math
             cell_size = 28
             start_x = (210 - (6 * cell_size)) / 2 
             
             for r in range(6):
                 pdf.set_x(start_x)
                 for c in range(6):
-                    pattern_val = chosen_pattern[r][c]
-                    if pattern_val == 0:
-                        word = list1[idx1 % len(list1)]
-                        idx1 += 1
-                        current_color = c1
-                    else:
-                        word = list2[idx2 % len(list2)]
-                        idx2 += 1
-                        current_color = c2
+                    # Python automatically maps the cell to a color index
+                    color_idx = chosen_func(r, c)
+                    current_color = color_names[color_idx]
+                    
+                    # Pull the next word for that specific color
+                    c_list = w_dict.get(current_color, ["word"])
+                    word = clean_text(c_list[word_trackers[current_color] % max(1, len(c_list))])
+                    word_trackers[current_color] += 1
                         
                     if is_key:
                         fill_rgb, text_rgb = get_color_rgb(current_color)
                         pdf.set_fill_color(*fill_rgb)
                         pdf.set_text_color(*text_rgb)
-                        pdf.set_font("Helvetica", "B", 10)
-                        pdf.cell(cell_size, cell_size, clean_text(word), 1, 0, 'C', fill=True)
+                        pdf.set_font("Helvetica", "B", 9) # slightly smaller font for long words
+                        pdf.cell(cell_size, cell_size, word, 1, 0, 'C', fill=True)
                         pdf.set_text_color(0, 0, 0)
                     else:
-                        pdf.set_font("Helvetica", "B", 11)
-                        pdf.cell(cell_size, cell_size, clean_text(word), 1, 0, 'C')
+                        pdf.set_font("Helvetica", "B", 10)
+                        pdf.cell(cell_size, cell_size, word, 1, 0, 'C')
                 pdf.ln(cell_size)
-            first_page = False # We just forced a page
-            continue # Skip the standard formatting block below
+            first_page = False 
+            continue 
 
         # Formatting for all other standard activities
         if not first_page: pdf.add_page()
