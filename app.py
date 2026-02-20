@@ -19,7 +19,7 @@ if "scroll_up" not in st.session_state: st.session_state.scroll_up = False
 APP_NAME = "WIN Time Phonics Builder"
 APP_EMOJI = "🎯" 
 SIDEBAR_TITLE = "🏫 WIN Time Architect"
-FOOTER_TEXT = "🚀 WIN Time Phonics v18.5"
+FOOTER_TEXT = "🚀 WIN Time Phonics v18.6"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 
@@ -96,12 +96,22 @@ def generate_tracker_pdf():
     row = 0
     for s, is_h in skills:
         if is_h:
-            pdf.set_font("Helvetica", "B", 11); pdf.set_fill_color(235, 235, 235)
-            pdf.cell(190, 8, f" {s}", 1, 1, 'L', fill=True); row = 0
+            pdf.set_font("Helvetica", "B", 11)
+            pdf.set_fill_color(235, 235, 235)
+            pdf.cell(190, 8, f" {s}", 1, 1, 'L', fill=True)
+            row = 0
         else:
-            pdf.set_font("Helvetica", "", 10); pdf.set_fill_color(255, 255, 255) if row % 2 else pdf.set_fill_color(250, 250, 250)
-            pdf.cell(100, 8, f" {s}", 1, 0, 'L', True)
-            pdf.cell(30, 8, "", 1, 0, 'C', True); pdf.cell(30, 8, "", 1, 0, 'C', True); pdf.cell(30, 8, "", 1, 1, 'C', True)
+            pdf.set_font("Helvetica", "", 10)
+            # FIX: Using standard block statements so Streamlit doesn't print "None"
+            if row % 2 == 0:
+                pdf.set_fill_color(250, 250, 250)
+            else:
+                pdf.set_fill_color(255, 255, 255)
+            
+            pdf.cell(100, 8, f" {s}", 1, 0, 'L', fill=True)
+            pdf.cell(30, 8, "", 1, 0, 'C', fill=True)
+            pdf.cell(30, 8, "", 1, 0, 'C', fill=True)
+            pdf.cell(30, 8, "", 1, 1, 'C', fill=True)
             row += 1
     return bytes(pdf.output())
 
@@ -149,7 +159,10 @@ with st.sidebar:
 # --- 6. HEADER ---
 c1, c2 = st.columns([3, 1])
 with c1: st.title("Welcome to WIN Time! 🏫")
-with c2: st.download_button("📋 Download Skill Tracker", generate_tracker_pdf(), "Skill_Tracker.pdf", "application/pdf", use_container_width=True, type="primary")
+with c2: 
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.download_button("📋 Download Skill Tracker", generate_tracker_pdf(), "Skill_Tracker.pdf", "application/pdf", use_container_width=True, type="primary")
+st.divider()
 
 # --- 7. MAIN BUILDER ---
 col_plan, col_res = st.columns([1.5, 1])
@@ -396,5 +409,14 @@ def render_pdf(data, is_key=False):
 # --- 9. DOWNLOADS ---
 with col_res:
     if st.session_state.final_json:
-        st.download_button("📘 Student Packet", render_pdf(st.session_state.final_json, False), "Student.pdf", use_container_width=True)
-        st.download_button("🗝️ Teacher Key", render_pdf(st.session_state.final_json, True), "Key.pdf", use_container_width=True)
+        st.header("📥 Results Ready")
+        spdf = render_pdf(st.session_state.final_json, False)
+        tpdf = render_pdf(st.session_state.final_json, True)
+        c1, c2 = st.columns(2)
+        with c1: st.download_button("📘 Student Packet", spdf, "Student_Worksheet.pdf", use_container_width=True)
+        with c2: st.download_button("🗝️ Teacher Key", tpdf, "Teacher_Key.pdf", use_container_width=True)
+        if st.session_state.scroll_up:
+            components.html("<script>window.parent.scrollTo({top: 0, behavior: 'smooth'});</script>", height=0)
+            st.session_state.scroll_up = False
+
+st.markdown("<div class='donation-footer'><h3>☕ Support WIN Time Phonics</h3><p>Keep this free for teachers!</p><a href='https://venmo.com'>Venmo</a> | <a href='https://paypal.me'>PayPal</a></div>", unsafe_allow_html=True)
