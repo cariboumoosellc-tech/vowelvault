@@ -1,3 +1,4 @@
 streamlit
 fpdf
 google-generativeai
+python-dotenv
