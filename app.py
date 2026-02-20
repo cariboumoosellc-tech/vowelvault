@@ -19,7 +19,7 @@ if "scroll_up" not in st.session_state: st.session_state.scroll_up = False
 APP_NAME = "WIN Time Phonics Builder"
 APP_EMOJI = "🎯" 
 SIDEBAR_TITLE = "🏫 WIN Time Architect"
-FOOTER_TEXT = "🚀 WIN Time Phonics Builder v1.7"
+FOOTER_TEXT = "🚀 WIN Time Phonics Builder v1.8"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 # ==========================================
@@ -61,7 +61,6 @@ st.markdown("""
         background: #ffffff; padding: 25px; border-radius: 15px; 
         text-align: center; margin-top: 50px; border: 1px solid #e2e8f0;
     }
-    /* Make primary buttons (like the download tracker) pop */
     button[kind="primary"] {
         background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
         border: none !important;
@@ -75,8 +74,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def generate_tracker_pdf():
-    """Generates the Free Skill Mastery Tracker PDF"""
+    """Generates the Free Skill Mastery Tracker PDF with Categorical Breakdowns"""
     pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
     
     # Header
@@ -85,49 +85,68 @@ def generate_tracker_pdf():
     
     pdf.set_font("Helvetica", "B", 12)
     pdf.cell(0, 10, "Student Name: _________________________________", ln=True, align="L")
-    pdf.ln(5)
+    pdf.ln(3)
     
     # Table Header
     pdf.set_font("Helvetica", "B", 12)
-    pdf.set_fill_color(220, 230, 245) # Light blue header
+    pdf.set_fill_color(220, 230, 245) 
     pdf.cell(100, 10, " Phonics Skill", 1, 0, 'L', fill=True)
     pdf.cell(30, 10, "Practice", 1, 0, 'C', fill=True)
     pdf.cell(30, 10, "Pass-Off", 1, 0, 'C', fill=True)
     pdf.cell(30, 10, "Initials", 1, 1, 'C', fill=True)
     
-    # Rows
-    pdf.set_font("Helvetica", "", 10)
+    # Rows (Tuple format: ("Skill Name", is_category_header))
     skills = [
-        "Letter Names & Sounds",
-        "Short Vowels (CVC)",
-        "Consonant Blends (2-letter)",
-        "Three-Letter Blends (str, spl, spr, scr, shr, thr)",
-        "Digraphs (sh, ch, th, wh, ck, ng)",
-        "Complex Consonants (tch, dge, kn, wr, mb, ph)",
-        "Final Blends",
-        "Silent e (CVCe)",
-        "Vowel Teams (ai, ea, oa, ee)",
-        "Unpredictable Vowel Teams (ea, oo, ow, ou, ie)",
-        "R-Controlled Vowels (ar, er, ir, or, ur)",
-        "Diphthongs (oi, oy, ou, ow)",
-        "Multisyllable Words",
-        "Inflectional Endings (-s, -ed, -ing)",
-        "High-Frequency Words"
+        ("Letter Names & Sounds", False),
+        ("Short Vowels (CVC)", False),
+        ("Consonant Blends (2-letter)", False),
+        ("Three-Letter Blends (str, spl, spr, scr, shr, thr)", False),
+        ("Digraphs (sh, ch, th, wh, ck, ng)", False),
+        ("Complex Consonants (tch, dge, kn, wr, mb, ph)", False),
+        ("Final Blends", False),
+        ("Silent e (CVCe)", False),
+        ("Vowel Teams (ai, ea, oa, ee)", False),
+        ("Unpredictable Vowel Teams (ea, oo, ow, ou, ie)", False),
+        ("R-Controlled Vowels (ar, er, ir, or, ur)", False),
+        ("Diphthongs (oi, oy, ou, ow)", False),
+        ("MULTISYLLABLE WORDS", True),
+        ("   - closed/closed", False),
+        ("   - silent e", False),
+        ("   - open", False),
+        ("   - vowel team", False),
+        ("   - consonant le", False),
+        ("   - vowel r", False),
+        ("INFLECTIONAL ENDINGS", True),
+        ("   - ed", False),
+        ("   - ing", False),
+        ("   - s", False),
+        ("   - es", False),
+        ("   - er", False),
+        ("   - est", False),
+        ("High-Frequency Words", False)
     ]
     
-    for i, skill in enumerate(skills):
-        # Alternate row colors for readability
-        fill = (i % 2 == 0)
-        if fill:
-            pdf.set_fill_color(250, 250, 250)
+    row_count = 0
+    for skill, is_header in skills:
+        if is_header:
+            pdf.set_font("Helvetica", "B", 11)
+            pdf.set_fill_color(235, 235, 235) # Light gray for category headers
+            pdf.cell(190, 8, f" {skill}", 1, 1, 'L', fill=True)
+            row_count = 0 # Reset shading for sub-items
         else:
-            pdf.set_fill_color(255, 255, 255)
+            pdf.set_font("Helvetica", "", 10)
+            fill = (row_count % 2 == 0)
+            if fill:
+                pdf.set_fill_color(250, 250, 250)
+            else:
+                pdf.set_fill_color(255, 255, 255)
+                
+            pdf.cell(100, 8, f" {skill}", 1, 0, 'L', fill=fill)
+            pdf.cell(30, 8, "", 1, 0, 'C', fill=fill)
+            pdf.cell(30, 8, "", 1, 0, 'C', fill=fill)
+            pdf.cell(30, 8, "", 1, 1, 'C', fill=fill)
+            row_count += 1
             
-        pdf.cell(100, 12, f" {skill}", 1, 0, 'L', fill=fill)
-        pdf.cell(30, 12, "", 1, 0, 'C', fill=fill)
-        pdf.cell(30, 12, "", 1, 0, 'C', fill=fill)
-        pdf.cell(30, 12, "", 1, 1, 'C', fill=fill)
-        
     return bytes(pdf.output())
 
 # --- 4. THE ARCHITECT SIDEBAR ---
@@ -190,14 +209,14 @@ with h_col1:
     st.title("Welcome to WIN Time Phonics! 🏫")
     st.markdown("Build targeted, data-driven phonics interventions in seconds.")
 with h_col2:
-    st.markdown("<br>", unsafe_allow_html=True) # Spacer to align the button
+    st.markdown("<br>", unsafe_allow_html=True)
     st.download_button(
         label="📋 Download Free Skill Tracker",
         data=generate_tracker_pdf(),
         file_name="WIN_Time_Skill_Tracker.pdf",
         mime="application/pdf",
         use_container_width=True,
-        type="primary" # Uses the cool gradient CSS we added!
+        type="primary"
     )
 st.divider()
 
