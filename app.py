@@ -79,6 +79,7 @@ with st.sidebar:
             "cat": sel_cat, "sounds": sel_targets
         })
 
+    # NEW: Advanced Randomizer for 6 Activities
     if st.button("🎲 Choose For Me", use_container_width=True):
         st.session_state.build_queue = []
         grade_logic = {
@@ -87,14 +88,22 @@ with st.sidebar:
             "3rd": ["Variant Vowel Teams", "Multisyllable", "Endings"],
             "4th+": ["Multisyllable", "Endings", "Mixed Review (All Types)"]
         }
-        auto_cat = random.choice(grade_logic[grade])
-        auto_target = [random.choice(PHONICS_MENU[auto_cat])]
-        acts_pool = ["Nonsense Word Fluency", "Word Bank Sort", "Sentence Match", "Sound Mapping", "Detective Riddle Cards"]
-        chosen_acts = ["Decodable Story"] + random.sample(acts_pool, 3)
+        
+        # Grab all 6 unique activities and completely shuffle their order
+        chosen_acts = list(ACTIVITY_INFO.keys())
+        random.shuffle(chosen_acts)
+        
+        # Assign a randomized target to EVERY individual activity based on the grade level
         for act in chosen_acts:
+            auto_cat = random.choice(grade_logic[grade])
+            auto_target = [random.choice(PHONICS_MENU[auto_cat])]
+            
             st.session_state.build_queue.append({
-                "type": act, "nonsense": (act == "Nonsense Word Fluency"), 
-                "id": str(uuid.uuid4()), "cat": auto_cat, "sounds": auto_target
+                "type": act, 
+                "nonsense": (act == "Nonsense Word Fluency"), 
+                "id": str(uuid.uuid4()), 
+                "cat": auto_cat, 
+                "sounds": auto_target
             })
         st.rerun()
 
@@ -104,7 +113,7 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-    st.caption("🚀 **WIN Time Phonics Builder v1.3**")
+    st.caption("🚀 **WIN Time Phonics Builder v1.4**")
     st.info("Have a new activity idea? [Contact the Creator](mailto:your-email@example.com)")
 
 # --- 5. MAIN BUILDER ---
@@ -134,7 +143,7 @@ with col_plan:
 
     if st.session_state.build_queue:
         if st.button("🚀 GENERATE WORKSHEET", type="primary", use_container_width=True):
-            with st.spinner("AI is crafting unique content..."):
+            with st.spinner("AI is crafting unique content... this may take up to 30 seconds for large packets..."):
                 seed = random.randint(1, 1000000)
                 all_targets = set()
                 for item in st.session_state.build_queue:
@@ -176,10 +185,16 @@ with col_plan:
                 }}
                 Seed: {seed}
                 """
-                model = genai.GenerativeModel("gemini-2.5-flash")
-                response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
-                st.session_state.final_json = json.loads(response.text)
-                st.session_state.scroll_up = True
+                try:
+                    model = genai.GenerativeModel("gemini-2.5-flash")
+                    response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
+                    st.session_state.final_json = json.loads(response.text)
+                    st.session_state.scroll_up = True
+                except Exception as e:
+                    if "ResourceExhausted" in str(e) or "429" in str(e):
+                        st.error("🚦 Whoa there! The AI is moving too fast and hit a speed limit. Please wait a few seconds and click Generate again.")
+                    else:
+                        st.error(f"⚠️ An error occurred during generation: {str(e)}")
 
 # --- 6. BULLETPROOF PDF ENGINE WITH SANITIZER ---
 def clean_text(text):
@@ -273,7 +288,6 @@ def render_pdf(data, is_key=False):
 
                 w = 180 / len(cats)
                 pdf.set_font("Helvetica", "B", 12)
-                # Reduced font size slightly for headers just to be safe
                 for c in cats: pdf.cell(w, 10, clean_text(c), 1, 0, 'C')
                 pdf.ln(); pdf.set_font("Helvetica", "", 12)
                 
@@ -319,7 +333,6 @@ def render_pdf(data, is_key=False):
             pdf.set_font("Helvetica", "B", 18); pdf.cell(0, 12, "Detective Riddle Cards", ln=True, align="C")
             cards = content.get('riddles', [])[:8]
             xs, ys = 10, 30
-            # Reduced dimensions & row spacing to protect against margin page-breaks
             c_w, c_h = 90, 42 
             for i, r in enumerate(cards):
                 col, row = i % 2, i // 2
