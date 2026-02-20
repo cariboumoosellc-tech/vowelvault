@@ -19,7 +19,7 @@ if "scroll_up" not in st.session_state: st.session_state.scroll_up = False
 APP_NAME = "WIN Time Phonics Builder"
 APP_EMOJI = "🎯" 
 SIDEBAR_TITLE = "🏫 WIN Time Architect"
-FOOTER_TEXT = "🚀 WIN Time Phonics Builder v1.6"
+FOOTER_TEXT = "🚀 WIN Time Phonics Builder v1.7"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 # ==========================================
@@ -47,7 +47,7 @@ ACTIVITY_INFO = {
     "Detective Riddle Cards": "🔍 8 cards per page with 3 logic clues each."
 }
 
-# --- 3. CUSTOM UI STYLING ---
+# --- 3. CUSTOM UI STYLING & PDF HELPERS ---
 st.markdown("""
     <style>
     .stApp { background-color: #f8fafc; }
@@ -61,8 +61,74 @@ st.markdown("""
         background: #ffffff; padding: 25px; border-radius: 15px; 
         text-align: center; margin-top: 50px; border: 1px solid #e2e8f0;
     }
+    /* Make primary buttons (like the download tracker) pop */
+    button[kind="primary"] {
+        background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+        border: none !important;
+        font-weight: bold !important;
+        transition: transform 0.2s;
+    }
+    button[kind="primary"]:hover {
+        transform: scale(1.02);
+    }
     </style>
 """, unsafe_allow_html=True)
+
+def generate_tracker_pdf():
+    """Generates the Free Skill Mastery Tracker PDF"""
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Header
+    pdf.set_font("Helvetica", "B", 22)
+    pdf.cell(0, 15, "Skill Mastery Tracker", ln=True, align="C")
+    
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.cell(0, 10, "Student Name: _________________________________", ln=True, align="L")
+    pdf.ln(5)
+    
+    # Table Header
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.set_fill_color(220, 230, 245) # Light blue header
+    pdf.cell(100, 10, " Phonics Skill", 1, 0, 'L', fill=True)
+    pdf.cell(30, 10, "Practice", 1, 0, 'C', fill=True)
+    pdf.cell(30, 10, "Pass-Off", 1, 0, 'C', fill=True)
+    pdf.cell(30, 10, "Initials", 1, 1, 'C', fill=True)
+    
+    # Rows
+    pdf.set_font("Helvetica", "", 10)
+    skills = [
+        "Letter Names & Sounds",
+        "Short Vowels (CVC)",
+        "Consonant Blends (2-letter)",
+        "Three-Letter Blends (str, spl, spr, scr, shr, thr)",
+        "Digraphs (sh, ch, th, wh, ck, ng)",
+        "Complex Consonants (tch, dge, kn, wr, mb, ph)",
+        "Final Blends",
+        "Silent e (CVCe)",
+        "Vowel Teams (ai, ea, oa, ee)",
+        "Unpredictable Vowel Teams (ea, oo, ow, ou, ie)",
+        "R-Controlled Vowels (ar, er, ir, or, ur)",
+        "Diphthongs (oi, oy, ou, ow)",
+        "Multisyllable Words",
+        "Inflectional Endings (-s, -ed, -ing)",
+        "High-Frequency Words"
+    ]
+    
+    for i, skill in enumerate(skills):
+        # Alternate row colors for readability
+        fill = (i % 2 == 0)
+        if fill:
+            pdf.set_fill_color(250, 250, 250)
+        else:
+            pdf.set_fill_color(255, 255, 255)
+            
+        pdf.cell(100, 12, f" {skill}", 1, 0, 'L', fill=fill)
+        pdf.cell(30, 12, "", 1, 0, 'C', fill=fill)
+        pdf.cell(30, 12, "", 1, 0, 'C', fill=fill)
+        pdf.cell(30, 12, "", 1, 1, 'C', fill=fill)
+        
+    return bytes(pdf.output())
 
 # --- 4. THE ARCHITECT SIDEBAR ---
 with st.sidebar:
@@ -118,6 +184,23 @@ with st.sidebar:
     st.caption(FOOTER_TEXT)
     st.info("Have a new activity idea? [Contact the Creator](mailto:your-email@example.com)")
 
+# --- 4.5 MAIN APP HEADER & DOWNLOAD TRACKER ---
+h_col1, h_col2 = st.columns([3, 1])
+with h_col1:
+    st.title("Welcome to WIN Time Phonics! 🏫")
+    st.markdown("Build targeted, data-driven phonics interventions in seconds.")
+with h_col2:
+    st.markdown("<br>", unsafe_allow_html=True) # Spacer to align the button
+    st.download_button(
+        label="📋 Download Free Skill Tracker",
+        data=generate_tracker_pdf(),
+        file_name="WIN_Time_Skill_Tracker.pdf",
+        mime="application/pdf",
+        use_container_width=True,
+        type="primary" # Uses the cool gradient CSS we added!
+    )
+st.divider()
+
 # --- 5. MAIN BUILDER ---
 col_plan, col_res = st.columns([1.5, 1])
 
@@ -162,10 +245,11 @@ with col_plan:
                 3. Comprehension questions MUST include the 'q' (question) and the 'a' (answer).
                 4. NO MARKDOWN ASTERISKS (**). Plain text only.
                 5. Nonsense Fluency must be exactly 21 pseudo-words. Provide a 2-step "detective_task" array.
-                6. Provide exactly 8 distinct riddles for cards.
-                7. Word Sort categories MUST be EXTREMELY short (Max 10 characters, e.g., "-ed", "Long A"). NO SENTENCES.
-                8. Sentence Match halves must be syntactically complex but short enough to fit side-by-side (max 7 words per half).
-                9. Output ONLY raw JSON. You MUST use this exact schema:
+                6. ZERO PROFANITY in pseudo-words.
+                7. Provide exactly 8 distinct riddles for cards.
+                8. Word Sort categories MUST be EXTREMELY short (Max 10 characters, e.g., "-ed", "Long A"). NO SENTENCES.
+                9. Sentence Match halves must be syntactically complex but short enough to fit side-by-side (max 7 words per half).
+                10. Output ONLY raw JSON. You MUST use this exact schema:
                 {{
                   "overview": "Phonics rule intro", 
                   "target_words": ["word1", "word2"],
@@ -239,7 +323,6 @@ def render_pdf(data, is_key=False):
 
         if a_type == "Decodable Story":
             title_text = clean_text(content.get('title', 'Decodable Story'))
-            # FORMAT FIX: Compressed title and body fonts to fit on one page
             pdf.set_font("Helvetica", "B", 18); pdf.cell(0, 10, title_text, ln=True, align="C")
             pdf.set_font("Helvetica", "", 12) 
             for para in content.get('paragraphs', []):
@@ -258,7 +341,7 @@ def render_pdf(data, is_key=False):
                     pdf.set_x(15); pdf.set_font("Helvetica", "I", 11); pdf.set_text_color(200, 0, 0)
                     pdf.multi_cell(0, 6, f"Answer: {a_text}"); pdf.set_text_color(0, 0, 0); pdf.ln(2)
                 else:
-                    pdf.ln(6) # Dramatically reduced white space between questions
+                    pdf.ln(6) 
 
         elif a_type == "Nonsense Word Fluency":
             pdf.set_font("Helvetica", "B", 18); pdf.cell(0, 10, "Decoding Drills (Nonsense Words)", ln=True); pdf.ln(5)
