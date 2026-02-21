@@ -19,7 +19,7 @@ if "just_generated" not in st.session_state: st.session_state.just_generated = F
 APP_NAME = "WIN Time Phonics Builder"
 APP_EMOJI = "✨" 
 SIDEBAR_TITLE = "📐 Architect Tools"
-FOOTER_TEXT = "🚀 WIN Time Phonics v2.3"
+FOOTER_TEXT = "🚀 WIN Time Phonics v2.4"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 
@@ -175,10 +175,10 @@ with st.sidebar:
     st.markdown("""
         <div style="background: linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;">
             <h3 style="margin-top:0; color: #1e293b; font-size: 1.1rem;">☕ Support the App</h3>
-            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">If you love generating WIN Time interventions, consider buying me a coffee to keep this tool free!</p>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">If you love generating WIN Time interventions, consider donating to keep this tool free!</p>
             <div style="display: flex; justify-content: center; gap: 10px;">
-                <a href="https://venmo.com/u/YOUR_VENMO_USERNAME" target="_blank" style="background: #008CFF; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">Venmo</a>
-                <a href="https://paypal.me/YOUR_PAYPAL_USERNAME" target="_blank" style="background: #003087; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">PayPal</a>
+                <a href="https://venmo.com/u/BRADONI" target="_blank" style="background: #008CFF; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">Venmo</a>
+                <a href="https://paypal.me/WINTIMEPHONIX" target="_blank" style="background: #003087; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">PayPal</a>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -207,7 +207,6 @@ with col_plan:
         </div>
         """, unsafe_allow_html=True)
     else:
-        # CHANGED: 4 columns to 3 columns to give cards more breathing room
         for i in range(0, len(st.session_state.build_queue), 3):
             cols = st.columns(3)
             for j in range(3):
@@ -216,7 +215,6 @@ with col_plan:
                     item = st.session_state.build_queue[idx]
                     with cols[j]:
                         display_name = "Story & Q's" if item['type'] == "Decodable Story" else item['type'].replace("Mystery Grid ", "")
-                        # CHANGED: Added CSS 'word-break: keep-all' and tweaked font-sizes so letters don't split!
                         st.markdown(f"""
                         <div class='builder-card'>
                             <small style='color:#94a3b8; font-weight:bold;'>Activity #{idx+1}</small>
@@ -231,18 +229,26 @@ with col_plan:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 GENERATE WORKSHEET", type="primary", use_container_width=True):
             with st.spinner("✨ AI is crafting rigorous content..."):
+                # ==========================================
+                # THE QUANTITY RESTORATION FIX
+                # Explicit instructions added so AI doesn't cut content short
+                # ==========================================
                 prompt = f"""
                 Create a {grade} worksheet ({r_level} level). 
                 Plan: {st.session_state.build_queue}.
                 
-                STRICT RULES:
+                STRICT QUANTITY & CONTENT RULES:
                 1. RIGOR: For 3rd/4th+ grade, use advanced vocabulary. NO simple words like 'cat'. 
-                2. STORY: Keep concise so it fits on one page. 
-                3. MYSTERY GRID: Choose 4 distinct colors. Generate EXACTLY 8 unique words for EACH color. 
-                4. WORD SORT: Categories MUST be 1 or 2 words maximum (e.g. "-ed" or "Long A"). Do NOT write sentences for headers.
-                5. SENTENCE MATCH: Halves MUST be under 6 words each.
-                6. JSON SAFETY: NO TRAILING COMMAS. Do NOT use double quotes (") inside strings. Use single quotes (') for dialogue.
-                7. Output raw JSON ONLY:
+                2. STORY: MUST be 3+ paragraphs. MUST have exactly 3 questions.
+                3. NONSENSE WORDS: MUST generate EXACTLY 21 pseudo-words.
+                4. WORD SORT: MUST generate at least 15 words total across categories. Categories MUST be 1 or 2 words maximum (e.g. "-ed" or "Long A"). Do NOT write sentences for headers.
+                5. SENTENCE MATCH: MUST generate EXACTLY 5 sentences. Halves MUST be under 6 words each.
+                6. SOUND MAPPING: MUST generate EXACTLY 10 words.
+                7. RIDDLES: MUST generate EXACTLY 8 distinct riddle cards.
+                8. MYSTERY GRID: Choose EXACTLY 4 distinct colors. Generate EXACTLY 8 unique words for EACH color.
+                
+                JSON SAFETY: NO TRAILING COMMAS. Do NOT use double quotes (") inside strings. Use single quotes (') for dialogue.
+                Output raw JSON ONLY:
                 {{
                   "overview": "3 sentence intro.", "target_words": ["word1", "word2"],
                   "activities": [ {{
