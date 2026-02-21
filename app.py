@@ -19,7 +19,7 @@ if "just_generated" not in st.session_state: st.session_state.just_generated = F
 APP_NAME = "WIN Time Phonics Builder"
 APP_EMOJI = "✨" 
 SIDEBAR_TITLE = "📐 Architect Tools"
-FOOTER_TEXT = "🚀 WIN Time Phonics v2.4"
+FOOTER_TEXT = "🚀 WIN Time Phonics v2.5"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 
@@ -63,6 +63,12 @@ st.markdown("""
         background-color: transparent; border: 2px dashed #cbd5e1;
         border-radius: 16px; padding: 40px 20px; text-align: center;
         color: #64748b; margin-top: 20px;
+    }
+    .success-card {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border: 1px solid #bbf7d0; border-radius: 16px; padding: 25px 20px;
+        text-align: center; margin-top: 20px; margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
     }
     button[kind="primary"] {
         background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
@@ -191,7 +197,7 @@ with c1:
     st.markdown("Build targeted, data-driven phonics interventions in seconds.")
 with c2: 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.download_button("Download Skills Tracker", generate_tracker_pdf(), "Skill_Tracker.pdf", "application/pdf", use_container_width=True, type="primary")
+    st.download_button("📋 Download Tracker", generate_tracker_pdf(), "Skill_Tracker.pdf", "application/pdf", use_container_width=True, type="primary")
 st.divider()
 
 # --- 7. MAIN BUILDER CANVAS ---
@@ -229,10 +235,6 @@ with col_plan:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 GENERATE WORKSHEET", type="primary", use_container_width=True):
             with st.spinner("✨ AI is crafting rigorous content..."):
-                # ==========================================
-                # THE QUANTITY RESTORATION FIX
-                # Explicit instructions added so AI doesn't cut content short
-                # ==========================================
                 prompt = f"""
                 Create a {grade} worksheet ({r_level} level). 
                 Plan: {st.session_state.build_queue}.
@@ -481,18 +483,35 @@ def render_pdf(data, is_key=False):
 
     return bytes(pdf.output())
 
-# --- 9. DOWNLOADS & CELEBRATION ---
+# --- 9. DOWNLOADS SECTION ---
 with col_res:
-    if st.session_state.final_json:
-        st.header("🎉 Results Ready!")
-        st.markdown("<p style='color:#64748b; font-size:14px;'>Your WIN Time packet has been generated successfully.</p>", unsafe_allow_html=True)
+    st.header("📥 Downloads")
+    
+    if not st.session_state.final_json:
+        # THE EMPTY STATE
+        st.markdown("""
+        <div class='empty-state'>
+            <h3 style='margin:0; color:#94a3b8; font-size:1.1rem;'>No packets yet</h3>
+            <p style='font-size: 13px; margin-top:5px;'>Your finished PDFs will appear here.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        # THE SUCCESS STATE
+        st.markdown("""
+        <div class='success-card'>
+            <h3 style='margin:0; color:#166534; font-size:1.3rem;'>🎉 Results Ready!</h3>
+            <p style='font-size: 14px; color:#15803d; margin-top:5px; margin-bottom:0;'>Your WIN Time packet was generated successfully. Download your files below.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
         spdf = render_pdf(st.session_state.final_json, False)
         tpdf = render_pdf(st.session_state.final_json, True)
         
-        st.download_button("📘 Download Student Packet", spdf, "Student_Worksheet.pdf", use_container_width=True)
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.download_button("🗝️ Download Teacher Key", tpdf, "Teacher_Key.pdf", use_container_width=True)
+        st.download_button("📘 Download Student Packet", spdf, "Student_Worksheet.pdf", use_container_width=True, type="primary")
+        st.markdown("<div style='height: 5px;'></div>", unsafe_allow_html=True) # Tiny spacer
+        st.download_button("🗝️ Download Teacher Key", tpdf, "Teacher_Key.pdf", use_container_width=True, type="primary")
         
+        # CELEBRATION SCRIPT
         if st.session_state.just_generated:
             anim_type = random.choice(["balloons", "snow", "school", "stars"])
             
@@ -543,5 +562,3 @@ with col_res:
                 </script>
             """, height=0)
             st.session_state.just_generated = False
-
-
