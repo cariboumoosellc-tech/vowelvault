@@ -17,9 +17,9 @@ if "scroll_up" not in st.session_state: st.session_state.scroll_up = False
 # 🎨 BRANDING SECTION
 # ==========================================
 APP_NAME = "WIN Time Phonics Builder"
-APP_EMOJI = "🎯" 
-SIDEBAR_TITLE = "🏫 WIN Time Architect"
-FOOTER_TEXT = "🚀 WIN Time Phonics v20.0"
+APP_EMOJI = "✨" 
+SIDEBAR_TITLE = "📐 Architect Tools"
+FOOTER_TEXT = "🚀 WIN Time Phonics v2.1.1"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 
@@ -47,23 +47,55 @@ ACTIVITY_INFO = {
     "Mystery Grid (Color-by-Code)": "🎨 FULL-PAGE 8x8 Aztec/Quilt geometric grid."
 }
 
-# --- 3. UI STYLING ---
+# --- 3. PREMIUM UI STYLING ---
 st.markdown("""
     <style>
-    .stApp { background-color: #f8fafc; }
+    /* Modern Background */
+    .stApp { background-color: #f4f7f6; font-family: 'Inter', sans-serif; }
+    
+    /* Elegant Builder Cards */
     .builder-card { 
-        background: white; padding: 10px; border-radius: 10px; 
-        border-top: 5px solid #3b82f6; margin-bottom: 5px; 
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center;
-        min-height: 110px; display: flex; flex-direction: column; justify-content: center;
+        background: #ffffff; 
+        padding: 20px; 
+        border-radius: 16px; 
+        border-top: 6px solid #6366f1; 
+        margin-bottom: 15px; 
+        box-shadow: 0 4px 12px rgba(0,0,0,0.04); 
+        text-align: center;
+        min-height: 120px; 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
+    .builder-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+    
+    /* Empty State Container */
+    .empty-state {
+        background-color: transparent;
+        border: 2px dashed #cbd5e1;
+        border-radius: 16px;
+        padding: 40px 20px;
+        text-align: center;
+        color: #64748b;
+        margin-top: 20px;
+    }
+    
+    /* Primary Button Styling */
     button[kind="primary"] {
-        background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
-        color: white !important; font-weight: bold !important;
-        transition: transform 0.2s;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+        color: white !important; 
+        font-weight: bold !important;
+        border-radius: 8px !important;
+        border: none !important;
+        box-shadow: 0 4px 6px rgba(99, 102, 241, 0.2) !important;
+        transition: transform 0.1s ease !important;
     }
     button[kind="primary"]:hover {
-        transform: scale(1.02);
+        transform: scale(1.02) !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -127,24 +159,39 @@ def get_color_rgb(color_name):
     }
     return colors.get(c, ((255,255,255), (0,0,0)))
 
-# --- 5. SIDEBAR ---
+# --- 5. SIDEBAR ARCHITECT ---
 with st.sidebar:
     st.title(SIDEBAR_TITLE)
-    grade = st.selectbox("Grade", ["1st", "2nd", "3rd", "4th+"])
-    r_level = st.select_slider("Difficulty", options=["Beginning", "Intermediate", "Advanced"])
-    sel_cat = st.selectbox("Category", list(PHONICS_MENU.keys()))
-    sel_targets = st.multiselect("Targets", PHONICS_MENU[sel_cat], default=[PHONICS_MENU[sel_cat][0]])
-    st.divider()
-    add_type = st.selectbox("Activity", list(ACTIVITY_INFO.keys()))
-    add_nonsense = st.checkbox("Include Nonsense Words", value=(add_type in ["Nonsense Word Fluency", "Mystery Grid (Color-by-Code)"]))
     
-    if st.button("➕ Add to Plan", use_container_width=True):
-        st.session_state.build_queue.append({
-            "type": add_type, "nonsense": add_nonsense, "id": str(uuid.uuid4()),
-            "cat": sel_cat, "sounds": sel_targets
-        })
+    with st.container():
+        st.subheader("1. Setup Profile")
+        grade = st.selectbox("📚 Grade Level", ["1st", "2nd", "3rd", "4th+"])
+        r_level = st.select_slider("🧠 Difficulty", options=["Beginning", "Intermediate", "Advanced"])
+    
+    st.divider()
+    
+    with st.container():
+        st.subheader("2. Choose Skills")
+        sel_cat = st.selectbox("🎯 Phonics Category", list(PHONICS_MENU.keys()))
+        sel_targets = st.multiselect("📌 Specific Targets", PHONICS_MENU[sel_cat], default=[PHONICS_MENU[sel_cat][0]])
+    
+    st.divider()
+    
+    with st.container():
+        st.subheader("3. Add Activities")
+        add_type = st.selectbox("🧩 Activity Type", list(ACTIVITY_INFO.keys()), help="Select an activity to add to your packet.")
+        add_nonsense = st.checkbox("🧪 Include Nonsense Words", value=(add_type in ["Nonsense Word Fluency", "Mystery Grid (Color-by-Code)"]))
+        
+        if st.button("➕ Add to Worksheet Plan", use_container_width=True):
+            st.session_state.build_queue.append({
+                "type": add_type, "nonsense": add_nonsense, "id": str(uuid.uuid4()),
+                "cat": sel_cat, "sounds": sel_targets
+            })
 
-    if st.button("🎲 Choose For Me (Full Packet)", use_container_width=True):
+    st.divider()
+    
+    st.subheader("⚡ Quick Actions")
+    if st.button("🪄 Auto-Build Full Packet", use_container_width=True):
         st.session_state.build_queue = []
         grade_logic = {"1st": ["CVC (Short Vowels)", "Consonant Digraphs"], "2nd": ["Magic E (CVCe)", "Vowel r"], 
                        "3rd": ["Multisyllable", "Endings"], "4th+": ["Multisyllable", "Endings"]}
@@ -159,46 +206,67 @@ with st.sidebar:
         st.session_state.build_queue = []; st.session_state.final_json = None; st.rerun()
 
     st.divider()
-    st.caption(FOOTER_TEXT)
-    st.info("Have a new activity idea? [Contact the Creator](mailto:your-email@example.com)")
-
-    # ---------------------------------------------------------
+    
     # ☕ ELEGANT WORKING DONATION BOX
-    # Update YOUR_VENMO_USERNAME and YOUR_PAYPAL_USERNAME here!
-    # ---------------------------------------------------------
     st.markdown("""
-        <div style="background: linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 20px; margin-bottom: 20px;">
+        <div style="background: linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;">
             <h3 style="margin-top:0; color: #1e293b; font-size: 1.1rem;">☕ Support the App</h3>
-            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Help keep this tool free!</p>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">If you love generating WIN Time interventions, consider buying me a coffee to keep this tool free!</p>
             <div style="display: flex; justify-content: center; gap: 10px;">
-                <a href="https://venmo.com/u/BRADONI" target="_blank" style="background: #008CFF; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">Venmo</a>
-                <a href="https://paypal.me/WINTIMEPHONIX" target="_blank" style="background: #003087; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">PayPal</a>
+                <a href="https://venmo.com/u/YOUR_VENMO_USERNAME" target="_blank" style="background: #008CFF; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">Venmo</a>
+                <a href="https://paypal.me/YOUR_PAYPAL_USERNAME" target="_blank" style="background: #003087; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">PayPal</a>
             </div>
         </div>
     """, unsafe_allow_html=True)
+    st.caption(FOOTER_TEXT)
 
 # --- 6. HEADER ---
 c1, c2 = st.columns([3, 1])
-with c1: st.title("Welcome to WIN Time! 🏫")
+with c1: 
+    st.title("✨ Welcome to WIN Time Phonics")
+    st.markdown("Build targeted, data-driven phonics interventions in seconds.")
 with c2: 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.download_button("📋 Download Skill Tracker", generate_tracker_pdf(), "Skill_Tracker.pdf", "application/pdf", use_container_width=True, type="primary")
+    st.download_button("📋 Download Tracker", generate_tracker_pdf(), "Skill_Tracker.pdf", "application/pdf", use_container_width=True, type="primary")
 st.divider()
 
-# --- 7. MAIN BUILDER ---
+# --- 7. MAIN BUILDER CANVAS ---
 col_plan, col_res = st.columns([1.5, 1])
+
 with col_plan:
     st.header("📝 Worksheet Plan")
-    if not st.session_state.build_queue: st.info("Queue is empty.")
+    
+    if not st.session_state.build_queue: 
+        st.markdown("""
+        <div class='empty-state'>
+            <h3 style='margin:0; color:#94a3b8;'>Your queue is empty</h3>
+            <p style='font-size: 14px; margin-top:5px;'>Use the <b>Architect Tools</b> in the sidebar to add activities, or click <b>Auto-Build Full Packet</b> to generate one instantly.</p>
+        </div>
+        """, unsafe_allow_html=True)
     else:
-        for i, item in enumerate(st.session_state.build_queue):
-            col_a, col_b = st.columns([4, 1])
-            col_a.markdown(f"**#{i+1} {item['type']}** ({', '.join(item['sounds'])})")
-            if col_b.button("✖️", key=f"del_{item['id']}"): st.session_state.build_queue.pop(i); st.rerun()
+        # Display the queue in a beautiful 4-column grid
+        for i in range(0, len(st.session_state.build_queue), 4):
+            cols = st.columns(4)
+            for j in range(4):
+                idx = i + j
+                if idx < len(st.session_state.build_queue):
+                    item = st.session_state.build_queue[idx]
+                    with cols[j]:
+                        display_name = "Story & Q's" if item['type'] == "Decodable Story" else item['type'].replace("Mystery Grid ", "")
+                        st.markdown(f"""
+                        <div class='builder-card'>
+                            <small style='color:#94a3b8; font-weight:bold;'>Activity #{idx+1}</small>
+                            <div style='font-weight:900; font-size:1rem; color:#1e293b; margin: 8px 0;'>{display_name}</div>
+                            <div style='font-size:0.75rem; color:#6366f1; background:#e0e7ff; padding: 4px 8px; border-radius: 12px; display:inline-block;'>{', '.join(item['sounds'])}</div>
+                        </div>""", unsafe_allow_html=True)
+                        if st.button("✖️ Remove", key=f"del_{item['id']}", use_container_width=True):
+                            st.session_state.build_queue.pop(idx)
+                            st.rerun()
 
     if st.session_state.build_queue:
+        st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 GENERATE WORKSHEET", type="primary", use_container_width=True):
-            with st.spinner("AI is crafting rigorous content..."):
+            with st.spinner("✨ AI is crafting rigorous content..."):
                 prompt = f"""
                 Create a {grade} worksheet ({r_level} level). 
                 Plan: {st.session_state.build_queue}.
@@ -228,7 +296,6 @@ with col_plan:
                     model = genai.GenerativeModel("gemini-2.5-flash")
                     response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json", "max_output_tokens": 8192})
                     
-                    # BULLETPROOF JSON CLEANUP: Strips markdown if the AI accidentally wraps the response
                     raw_text = response.text.strip()
                     if raw_text.startswith("```json"): raw_text = raw_text[7:]
                     if raw_text.startswith("```"): raw_text = raw_text[3:]
@@ -239,18 +306,16 @@ with col_plan:
                     st.session_state.scroll_up = True
                     st.rerun()
                 except Exception as e:
-                    st.error(f"⚠️ JSON Parsing Error: {str(e)}. Please click Generate again. The AI hit a typo.")
+                    st.error(f"⚠️ JSON Parsing Error: {str(e)}. Please click Generate again.")
 
-# --- 8. PDF RENDERER ---
+# --- 8. PDF RENDERER (Preserved flawless logic from V20) ---
 def clean_text(t): return str(t).replace("’","'").replace("“",'"').replace("”",'"').replace("**","")
 
 def render_pdf(data, is_key=False):
     pdf = FPDF()
     pdf.set_auto_page_break(True, margin=15)
     
-    # ---------------------------------------------------------
     # COVER PAGE
-    # ---------------------------------------------------------
     pdf.add_page()
     if is_key:
         pdf.set_font("Helvetica", "B", 12); pdf.set_text_color(200, 0, 0)
@@ -279,16 +344,13 @@ def render_pdf(data, is_key=False):
     for i, act in enumerate(data.get("activities", [])):
         pdf.cell(0, 8, f"[   ]  {i+1}. {clean_text(act.get('type', 'Activity'))}", ln=True)
     
-    # ---------------------------------------------------------
     # ACTIVITIES
-    # ---------------------------------------------------------
     for act in data.get("activities", []):
         a_type, content = act['type'], act['content']
         pdf.add_page() 
         
-        # --- MYSTERY GRID ---
         if a_type == "Mystery Grid (Color-by-Code)":
-            pdf.rect(10, 10, 190, 277)
+            pdf.rect(10, 10, 190, 277) 
             pdf.set_font("Helvetica", "B", 20); pdf.cell(0, 15, "Aztec Quilt Mystery Grid", ln=True, align="C")
             
             if not is_key:
@@ -332,7 +394,6 @@ def render_pdf(data, is_key=False):
                 pdf.ln(size)
             continue
 
-        # --- STANDARD HEADER ---
         if is_key:
             pdf.set_font("Helvetica", "B", 10); pdf.set_text_color(200, 0, 0)
             pdf.cell(0, 10, "TEACHER ANSWER KEY", ln=True, align="R"); pdf.set_text_color(0,0,0)
@@ -342,7 +403,6 @@ def render_pdf(data, is_key=False):
         
         pdf.ln(2); pdf.set_font("Helvetica", "B", 14); pdf.cell(0, 10, a_type, ln=True); pdf.ln(2)
         
-        # --- DECODABLE STORY ---
         if a_type == "Decodable Story":
             pdf.set_font("Helvetica", "B", 12); pdf.cell(0, 10, clean_text(content.get('title','')), ln=True, align="C")
             pdf.set_font("Helvetica", "", 11)
@@ -359,7 +419,6 @@ def render_pdf(data, is_key=False):
                 else: 
                     pdf.ln(8)
 
-        # --- NONSENSE WORD FLUENCY ---
         elif a_type == "Nonsense Word Fluency":
             words = content.get('words', [])[:21]
             for i, word in enumerate(words):
@@ -372,7 +431,6 @@ def render_pdf(data, is_key=False):
                 for task in tasks:
                     pdf.set_x(15); pdf.multi_cell(0, 6, clean_text(task))
 
-        # --- WORD BANK SORT ---
         elif a_type == "Word Bank Sort":
             cats = list(content.get('sort_cats', {}).keys())
             if cats:
@@ -401,7 +459,6 @@ def render_pdf(data, is_key=False):
                         pdf.ln()
                     pdf.set_text_color(0, 0, 0)
 
-        # --- SENTENCE MATCH ---
         elif a_type == "Sentence Match":
             l, r = content.get('match_l', []), content.get('match_r', [])
             dr = r if is_key else random.sample(r, len(r))
@@ -414,7 +471,6 @@ def render_pdf(data, is_key=False):
                 pdf.cell(85, 10, clean_text(dr[i])[:50] if i < len(dr) else "", 0, 1, 'R')
                 pdf.set_text_color(0, 0, 0)
 
-        # --- SOUND MAPPING ---
         elif a_type == "Sound Mapping":
             for word in content.get('map_words', []):
                 pdf.set_font("Helvetica", "B", 14); pdf.cell(50, 12, f"{clean_text(word)} -> ", 0, 0, 'R')
@@ -424,7 +480,6 @@ def render_pdf(data, is_key=False):
                     pdf.cell(20, 12, "", 1, 0); pdf.cell(20, 12, "", 1, 0); pdf.cell(20, 12, "", 1, 1)
                 pdf.ln(2)
 
-        # --- RIDDLE CARDS ---
         elif a_type == "Detective Riddle Cards":
             cards = content.get('riddles', [])[:8]
             xs, ys = 15, 45 
@@ -447,13 +502,15 @@ def render_pdf(data, is_key=False):
 # --- 9. DOWNLOADS ---
 with col_res:
     if st.session_state.final_json:
-        st.header("📥 Results Ready")
+        st.header("🎉 Results Ready!")
+        st.markdown("<p style='color:#64748b; font-size:14px;'>Your WIN Time packet has been generated successfully.</p>", unsafe_allow_html=True)
         spdf = render_pdf(st.session_state.final_json, False)
         tpdf = render_pdf(st.session_state.final_json, True)
-        c1, c2 = st.columns(2)
-        with c1: st.download_button("📘 Student Packet", spdf, "Student_Worksheet.pdf", use_container_width=True)
-        with c2: st.download_button("🗝️ Teacher Key", tpdf, "Teacher_Key.pdf", use_container_width=True)
+        
+        st.download_button("📘 Download Student Packet", spdf, "Student_Worksheet.pdf", use_container_width=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.download_button("🗝️ Download Teacher Key", tpdf, "Teacher_Key.pdf", use_container_width=True)
+        
         if st.session_state.scroll_up:
             components.html("<script>window.parent.scrollTo({top: 0, behavior: 'smooth'});</script>", height=0)
             st.session_state.scroll_up = False
-
