@@ -11,7 +11,7 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 if "build_queue" not in st.session_state: st.session_state.build_queue = []
 if "final_json" not in st.session_state: st.session_state.final_json = None
-if "scroll_up" not in st.session_state: st.session_state.scroll_up = False
+if "just_generated" not in st.session_state: st.session_state.just_generated = False
 
 # ==========================================
 # 🎨 BRANDING SECTION
@@ -19,7 +19,7 @@ if "scroll_up" not in st.session_state: st.session_state.scroll_up = False
 APP_NAME = "WIN Time Phonics Builder"
 APP_EMOJI = "✨" 
 SIDEBAR_TITLE = "📐 Architect Tools"
-FOOTER_TEXT = "🚀 WIN Time Phonics v2.1.1"
+FOOTER_TEXT = "🚀 WIN Time Phonics v2.2"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 
@@ -50,53 +50,27 @@ ACTIVITY_INFO = {
 # --- 3. PREMIUM UI STYLING ---
 st.markdown("""
     <style>
-    /* Modern Background */
     .stApp { background-color: #f4f7f6; font-family: 'Inter', sans-serif; }
-    
-    /* Elegant Builder Cards */
     .builder-card { 
-        background: #ffffff; 
-        padding: 20px; 
-        border-radius: 16px; 
-        border-top: 6px solid #6366f1; 
-        margin-bottom: 15px; 
-        box-shadow: 0 4px 12px rgba(0,0,0,0.04); 
-        text-align: center;
-        min-height: 120px; 
-        display: flex; 
-        flex-direction: column; 
-        justify-content: center;
+        background: #ffffff; padding: 20px; border-radius: 16px; 
+        border-top: 6px solid #6366f1; margin-bottom: 15px; 
+        box-shadow: 0 4px 12px rgba(0,0,0,0.04); text-align: center;
+        min-height: 120px; display: flex; flex-direction: column; justify-content: center;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    .builder-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-    }
-    
-    /* Empty State Container */
+    .builder-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
     .empty-state {
-        background-color: transparent;
-        border: 2px dashed #cbd5e1;
-        border-radius: 16px;
-        padding: 40px 20px;
-        text-align: center;
-        color: #64748b;
-        margin-top: 20px;
+        background-color: transparent; border: 2px dashed #cbd5e1;
+        border-radius: 16px; padding: 40px 20px; text-align: center;
+        color: #64748b; margin-top: 20px;
     }
-    
-    /* Primary Button Styling */
     button[kind="primary"] {
         background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
-        color: white !important; 
-        font-weight: bold !important;
-        border-radius: 8px !important;
-        border: none !important;
-        box-shadow: 0 4px 6px rgba(99, 102, 241, 0.2) !important;
+        color: white !important; font-weight: bold !important; border-radius: 8px !important;
+        border: none !important; box-shadow: 0 4px 6px rgba(99, 102, 241, 0.2) !important;
         transition: transform 0.1s ease !important;
     }
-    button[kind="primary"]:hover {
-        transform: scale(1.02) !important;
-    }
+    button[kind="primary"]:hover { transform: scale(1.02) !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -162,34 +136,26 @@ def get_color_rgb(color_name):
 # --- 5. SIDEBAR ARCHITECT ---
 with st.sidebar:
     st.title(SIDEBAR_TITLE)
-    
     with st.container():
         st.subheader("1. Setup Profile")
         grade = st.selectbox("📚 Grade Level", ["1st", "2nd", "3rd", "4th+"])
         r_level = st.select_slider("🧠 Difficulty", options=["Beginning", "Intermediate", "Advanced"])
-    
     st.divider()
-    
     with st.container():
         st.subheader("2. Choose Skills")
         sel_cat = st.selectbox("🎯 Phonics Category", list(PHONICS_MENU.keys()))
         sel_targets = st.multiselect("📌 Specific Targets", PHONICS_MENU[sel_cat], default=[PHONICS_MENU[sel_cat][0]])
-    
     st.divider()
-    
     with st.container():
         st.subheader("3. Add Activities")
-        add_type = st.selectbox("🧩 Activity Type", list(ACTIVITY_INFO.keys()), help="Select an activity to add to your packet.")
+        add_type = st.selectbox("🧩 Activity Type", list(ACTIVITY_INFO.keys()))
         add_nonsense = st.checkbox("🧪 Include Nonsense Words", value=(add_type in ["Nonsense Word Fluency", "Mystery Grid (Color-by-Code)"]))
-        
         if st.button("➕ Add to Worksheet Plan", use_container_width=True):
             st.session_state.build_queue.append({
                 "type": add_type, "nonsense": add_nonsense, "id": str(uuid.uuid4()),
                 "cat": sel_cat, "sounds": sel_targets
             })
-
     st.divider()
-    
     st.subheader("⚡ Quick Actions")
     if st.button("🪄 Auto-Build Full Packet", use_container_width=True):
         st.session_state.build_queue = []
@@ -206,12 +172,10 @@ with st.sidebar:
         st.session_state.build_queue = []; st.session_state.final_json = None; st.rerun()
 
     st.divider()
-    
-    # ☕ ELEGANT WORKING DONATION BOX
     st.markdown("""
         <div style="background: linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;">
             <h3 style="margin-top:0; color: #1e293b; font-size: 1.1rem;">☕ Support the App</h3>
-            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">If you love generating WIN Time interventions, consider buying me a coffee to keep this tool free!</p>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Help keep WIN Time Phonics free for teachers!</p>
             <div style="display: flex; justify-content: center; gap: 10px;">
                 <a href="https://venmo.com/u/YOUR_VENMO_USERNAME" target="_blank" style="background: #008CFF; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">Venmo</a>
                 <a href="https://paypal.me/YOUR_PAYPAL_USERNAME" target="_blank" style="background: #003087; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">PayPal</a>
@@ -235,7 +199,6 @@ col_plan, col_res = st.columns([1.5, 1])
 
 with col_plan:
     st.header("📝 Worksheet Plan")
-    
     if not st.session_state.build_queue: 
         st.markdown("""
         <div class='empty-state'>
@@ -244,7 +207,6 @@ with col_plan:
         </div>
         """, unsafe_allow_html=True)
     else:
-        # Display the queue in a beautiful 4-column grid
         for i in range(0, len(st.session_state.build_queue), 4):
             cols = st.columns(4)
             for j in range(4):
@@ -295,54 +257,54 @@ with col_plan:
                 try:
                     model = genai.GenerativeModel("gemini-2.5-flash")
                     response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json", "max_output_tokens": 8192})
-                    
                     raw_text = response.text.strip()
                     if raw_text.startswith("```json"): raw_text = raw_text[7:]
                     if raw_text.startswith("```"): raw_text = raw_text[3:]
                     if raw_text.endswith("```"): raw_text = raw_text[:-3]
-                    raw_text = raw_text.strip()
-
-                    st.session_state.final_json = json.loads(raw_text)
-                    st.session_state.scroll_up = True
+                    
+                    st.session_state.final_json = json.loads(raw_text.strip())
+                    st.session_state.just_generated = True # Flags the app to celebrate!
                     st.rerun()
                 except Exception as e:
                     st.error(f"⚠️ JSON Parsing Error: {str(e)}. Please click Generate again.")
 
-# --- 8. PDF RENDERER (Preserved flawless logic from V20) ---
+# --- 8. BULLETPROOF PDF RENDERER ---
 def clean_text(t): return str(t).replace("’","'").replace("“",'"').replace("”",'"').replace("**","")
 
 def render_pdf(data, is_key=False):
-    pdf = FPDF()
+    pdf = FPDF(unit='mm', format='A4')
+    pdf.set_margins(15, 15, 15)
     pdf.set_auto_page_break(True, margin=15)
     
     # COVER PAGE
     pdf.add_page()
     if is_key:
         pdf.set_font("Helvetica", "B", 12); pdf.set_text_color(200, 0, 0)
-        pdf.cell(0, 10, "TEACHER ANSWER KEY", ln=True, align="R"); pdf.set_text_color(0,0,0)
+        pdf.set_x(15); pdf.cell(0, 10, "TEACHER ANSWER KEY", ln=True, align="R"); pdf.set_text_color(0,0,0)
     else:
         pdf.set_font("Helvetica", "B", 12)
-        pdf.cell(0, 10, "Name: ___________________________________   Date: ___________", ln=True)
+        pdf.set_x(15); pdf.cell(0, 10, "Name: ___________________________________   Date: ___________", ln=True)
 
     pdf.ln(10)
-    pdf.set_font("Helvetica", "B", 26); pdf.cell(0, 15, "WIN Time Phonics Packet", ln=True, align="C")
+    pdf.set_font("Helvetica", "B", 26); pdf.set_x(15); pdf.cell(0, 15, "WIN Time Phonics Packet", ln=True, align="C")
     pdf.ln(10)
 
-    pdf.set_font("Helvetica", "B", 14); pdf.cell(0, 8, "Learning Focus:", ln=True)
-    pdf.set_font("Helvetica", "", 12); pdf.multi_cell(0, 6, clean_text(data.get("overview", "Practice targeted phonics skills.")))
+    pdf.set_font("Helvetica", "B", 14); pdf.set_x(15); pdf.cell(0, 8, "Learning Focus:", ln=True)
+    pdf.set_font("Helvetica", "", 12); pdf.set_x(15); pdf.multi_cell(0, 6, clean_text(data.get("overview", "Practice targeted phonics skills.")))
     pdf.ln(10)
 
-    pdf.set_font("Helvetica", "B", 14); pdf.cell(0, 8, "Target Word Bank:", ln=True)
+    pdf.set_font("Helvetica", "B", 14); pdf.set_x(15); pdf.cell(0, 8, "Target Word Bank:", ln=True)
     pdf.set_font("Helvetica", "", 12)
     target_list = [clean_text(w) for w in data.get("target_words", [])]
+    pdf.set_x(15)
     if target_list: pdf.multi_cell(0, 6, "   |   ".join(target_list))
     else: pdf.cell(0, 6, "Words provided in activities.", ln=True)
     pdf.ln(10)
 
-    pdf.set_font("Helvetica", "B", 14); pdf.cell(0, 8, "Packet Checklist:", ln=True)
+    pdf.set_font("Helvetica", "B", 14); pdf.set_x(15); pdf.cell(0, 8, "Packet Checklist:", ln=True)
     pdf.set_font("Helvetica", "", 12)
     for i, act in enumerate(data.get("activities", [])):
-        pdf.cell(0, 8, f"[   ]  {i+1}. {clean_text(act.get('type', 'Activity'))}", ln=True)
+        pdf.set_x(15); pdf.cell(0, 8, f"[   ]  {i+1}. {clean_text(act.get('type', 'Activity'))}", ln=True)
     
     # ACTIVITIES
     for act in data.get("activities", []):
@@ -351,13 +313,13 @@ def render_pdf(data, is_key=False):
         
         if a_type == "Mystery Grid (Color-by-Code)":
             pdf.rect(10, 10, 190, 277) 
-            pdf.set_font("Helvetica", "B", 20); pdf.cell(0, 15, "Aztec Quilt Mystery Grid", ln=True, align="C")
+            pdf.set_font("Helvetica", "B", 20); pdf.set_x(15); pdf.cell(0, 15, "Aztec Quilt Mystery Grid", ln=True, align="C")
             
             if not is_key:
-                pdf.set_font("Helvetica", "B", 12); pdf.cell(0, 10, " Name: ___________________________________", ln=True, align="L")
+                pdf.set_font("Helvetica", "B", 12); pdf.set_x(15); pdf.cell(0, 10, " Name: ___________________________________", ln=True, align="L")
             else:
                 pdf.set_font("Helvetica", "B", 14); pdf.set_text_color(200, 0, 0)
-                pdf.cell(0, 10, "TEACHER ANSWER KEY", ln=True, align="C"); pdf.set_text_color(0,0,0)
+                pdf.set_x(15); pdf.cell(0, 10, "TEACHER ANSWER KEY", ln=True, align="C"); pdf.set_text_color(0,0,0)
 
             grid_data = content.get('mystery_grid', {})
             legend = grid_data.get('legend', {})
@@ -365,7 +327,7 @@ def render_pdf(data, is_key=False):
             
             pdf.set_font("Helvetica", "B", 10)
             legend_str = " | ".join([f"{k}: {v}" for k, v in legend.items()])
-            pdf.multi_cell(0, 8, "Legend: " + clean_text(legend_str), align="C")
+            pdf.set_x(15); pdf.multi_cell(0, 8, "Legend: " + clean_text(legend_str), align="C")
             pdf.ln(5)
             
             patterns = [
@@ -387,7 +349,7 @@ def render_pdf(data, is_key=False):
                     if is_key:
                         fill, text = get_color_rgb(c_name)
                         pdf.set_fill_color(*fill); pdf.set_text_color(*text)
-                        pdf.set_font("Helvetica", "B", 7); pdf.cell(size, size, word, 1, 0, 'C', True)
+                        pdf.set_font("Helvetica", "B", 7); pdf.cell(size, size, word, 1, 0, 'C', fill=True)
                         pdf.set_text_color(0,0,0)
                     else:
                         pdf.set_font("Helvetica", "", 8); pdf.cell(size, size, word, 1, 0, 'C')
@@ -396,38 +358,42 @@ def render_pdf(data, is_key=False):
 
         if is_key:
             pdf.set_font("Helvetica", "B", 10); pdf.set_text_color(200, 0, 0)
-            pdf.cell(0, 10, "TEACHER ANSWER KEY", ln=True, align="R"); pdf.set_text_color(0,0,0)
+            pdf.set_x(15); pdf.cell(0, 10, "TEACHER ANSWER KEY", ln=True, align="R"); pdf.set_text_color(0,0,0)
         else:
             pdf.set_font("Helvetica", "B", 10)
-            pdf.cell(0, 8, "Name: ___________________________________", ln=True, align="R")
+            pdf.set_x(15); pdf.cell(0, 8, "Name: ___________________________________", ln=True, align="R")
         
-        pdf.ln(2); pdf.set_font("Helvetica", "B", 14); pdf.cell(0, 10, a_type, ln=True); pdf.ln(2)
+        pdf.ln(2); pdf.set_font("Helvetica", "B", 14); pdf.set_x(15); pdf.cell(0, 10, a_type, ln=True); pdf.ln(2)
         
         if a_type == "Decodable Story":
-            pdf.set_font("Helvetica", "B", 12); pdf.cell(0, 10, clean_text(content.get('title','')), ln=True, align="C")
+            pdf.set_font("Helvetica", "B", 12); pdf.set_x(15); pdf.cell(0, 10, clean_text(content.get('title','')), ln=True, align="C")
             pdf.set_font("Helvetica", "", 11)
-            for p in content.get('paragraphs', []): pdf.multi_cell(0, 6, clean_text(p)); pdf.ln(2)
+            for p in content.get('paragraphs', []): 
+                pdf.set_x(15); pdf.multi_cell(0, 6, clean_text(p)); pdf.ln(2)
             
             if pdf.get_y() > 220: pdf.add_page()
             
-            pdf.ln(5); pdf.set_font("Helvetica", "B", 11); pdf.cell(0, 8, "Evidence Check:", ln=True)
+            pdf.ln(5); pdf.set_font("Helvetica", "B", 11); pdf.set_x(15); pdf.cell(0, 8, "Evidence Check:", ln=True)
             pdf.set_font("Helvetica", "", 11)
             for q in content.get('questions', []):
-                pdf.multi_cell(0, 7, f"Q: {clean_text(q['q'])}")
+                q_str = clean_text(q.get('q', ''))
+                a_str = clean_text(q.get('a', ''))
+                pdf.set_x(15); pdf.multi_cell(0, 7, f"Q: {q_str}")
                 if is_key: 
-                    pdf.set_text_color(200,0,0); pdf.multi_cell(0, 7, f"A: {clean_text(q['a'])}"); pdf.set_text_color(0,0,0); pdf.ln(2)
+                    pdf.set_text_color(200,0,0); pdf.set_x(15); pdf.multi_cell(0, 7, f"A: {a_str}"); pdf.set_text_color(0,0,0); pdf.ln(2)
                 else: 
                     pdf.ln(8)
 
         elif a_type == "Nonsense Word Fluency":
             words = content.get('words', [])[:21]
+            pdf.set_font("Helvetica", "B", 24)
             for i, word in enumerate(words):
-                pdf.set_font("Helvetica", "B", 24)
-                pdf.cell(60, 20, clean_text(word), 1, (i + 1) % 3 == 0, 'C')
+                if i % 3 == 0: pdf.set_x(15)
+                pdf.cell(60, 20, clean_text(word), 1, 1 if (i + 1) % 3 == 0 else 0, 'C')
             tasks = content.get('detective_task', [])
             if tasks:
-                pdf.ln(10); pdf.set_x(15); pdf.set_font("Helvetica", "B", 14)
-                pdf.cell(0, 8, "DETECTIVE TASK:", ln=True); pdf.set_font("Helvetica", "", 12)
+                pdf.ln(10); pdf.set_font("Helvetica", "B", 14); pdf.set_x(15); pdf.cell(0, 8, "DETECTIVE TASK:", ln=True)
+                pdf.set_font("Helvetica", "", 12)
                 for task in tasks:
                     pdf.set_x(15); pdf.multi_cell(0, 6, clean_text(task))
 
@@ -438,21 +404,24 @@ def render_pdf(data, is_key=False):
                 for cat_words in content['sort_cats'].values(): all_words.extend([clean_text(w) for w in cat_words])
                 random.shuffle(all_words)
                 pdf.set_font("Helvetica", "", 13)
-                pdf.multi_cell(0, 8, "Word Bank:  " + "   |   ".join(all_words)); pdf.ln(5)
+                pdf.set_x(15); pdf.multi_cell(0, 8, "Word Bank:  " + "   |   ".join(all_words)); pdf.ln(5)
                 w = 180 / len(cats)
                 
                 pdf.set_font("Helvetica", "B", 9) 
+                pdf.set_x(15)
                 for c in cats: pdf.cell(w, 10, clean_text(c)[:20], 1, 0, 'C')
                 pdf.ln(); pdf.set_font("Helvetica", "", 12)
                 
                 if not is_key:
                     for _ in range(6):
+                        pdf.set_x(15)
                         for _ in cats: pdf.cell(w, 12, "", 1, 0)
                         pdf.ln()
                 else:
                     max_r = max([len(content['sort_cats'][c]) for c in cats])
                     pdf.set_text_color(200, 0, 0)
                     for r in range(max_r):
+                        pdf.set_x(15)
                         for c in cats:
                             lst = content['sort_cats'][c]
                             pdf.cell(w, 10, clean_text(lst[r]) if r < len(lst) else "", 1, 0, 'C')
@@ -463,6 +432,7 @@ def render_pdf(data, is_key=False):
             l, r = content.get('match_l', []), content.get('match_r', [])
             dr = r if is_key else random.sample(r, len(r))
             for i in range(len(l)):
+                pdf.set_x(15)
                 pdf.set_font("Helvetica", "", 10) 
                 pdf.cell(85, 10, clean_text(l[i])[:50], 0, 0)
                 pdf.set_font("Courier", "", 10); pdf.cell(10, 10, ".......", 0, 0, 'C')
@@ -473,6 +443,7 @@ def render_pdf(data, is_key=False):
 
         elif a_type == "Sound Mapping":
             for word in content.get('map_words', []):
+                pdf.set_x(15)
                 pdf.set_font("Helvetica", "B", 14); pdf.cell(50, 12, f"{clean_text(word)} -> ", 0, 0, 'R')
                 if is_key:
                     pdf.set_text_color(200, 0, 0); pdf.cell(60, 12, "(Break word into phonemes)", 0, 1); pdf.set_text_color(0, 0, 0)
@@ -492,14 +463,17 @@ def render_pdf(data, is_key=False):
                 pdf.rect(x, y, c_w, c_h)
                 pdf.set_xy(x+2, y+2); pdf.set_font("Helvetica", "B", 10); pdf.cell(0, 5, f"Riddle #{i+1}")
                 pdf.set_xy(x+2, y+8); pdf.set_font("Helvetica", "", 9)
-                pdf.multi_cell(c_w-4, 4.5, f"Clue 1: {clean_text(r.get('clue1',''))}\nClue 2: {clean_text(r.get('clue2',''))}\nClue 3: {clean_text(r.get('clue3',''))}")
+                
+                clue_str = f"Clue 1: {clean_text(r.get('clue1',''))}\nClue 2: {clean_text(r.get('clue2',''))}\nClue 3: {clean_text(r.get('clue3',''))}"
+                pdf.multi_cell(c_w-4, 4.5, clue_str)
+                
                 if is_key:
                     pdf.set_xy(x, y + c_h - 7); pdf.set_font("Helvetica", "B", 11); pdf.set_text_color(200,0,0)
                     pdf.cell(c_w, 6, f"Ans: {clean_text(r.get('ans',''))}", 0, 0, 'C'); pdf.set_text_color(0,0,0)
 
     return bytes(pdf.output())
 
-# --- 9. DOWNLOADS ---
+# --- 9. DOWNLOADS & CELEBRATION ---
 with col_res:
     if st.session_state.final_json:
         st.header("🎉 Results Ready!")
@@ -511,6 +485,59 @@ with col_res:
         st.markdown("<br>", unsafe_allow_html=True)
         st.download_button("🗝️ Download Teacher Key", tpdf, "Teacher_Key.pdf", use_container_width=True)
         
-        if st.session_state.scroll_up:
-            components.html("<script>window.parent.scrollTo({top: 0, behavior: 'smooth'});</script>", height=0)
-            st.session_state.scroll_up = False
+        # --- THE CELEBRATION RANDOMIZER & AUTO-SCROLL ---
+        if st.session_state.just_generated:
+            anim_type = random.choice(["balloons", "snow", "school", "stars"])
+            
+            if anim_type == "balloons":
+                st.balloons()
+                js_injection = ""
+            elif anim_type == "snow":
+                st.snow()
+                js_injection = ""
+            elif anim_type == "school":
+                js_injection = "createEmojiShower(['📚', '🍎', '✏️', '🎓', '🚌']);"
+            else:
+                js_injection = "createEmojiShower(['⭐', '🌟', '✨', '🚀', '💡']);"
+            
+            components.html(f"""
+                <script>
+                    // Smooth scroll to the download buttons
+                    window.parent.scrollTo({{top: window.parent.document.body.scrollHeight, behavior: 'smooth'}});
+                    
+                    // Custom JS Emoji Shower Engine
+                    function createEmojiShower(emojis) {{
+                        const container = window.parent.document.createElement('div');
+                        container.style.position = 'fixed';
+                        container.style.top = '0';
+                        container.style.left = '0';
+                        container.style.width = '100vw';
+                        container.style.height = '100vh';
+                        container.style.pointerEvents = 'none';
+                        container.style.zIndex = '99999';
+                        window.parent.document.body.appendChild(container);
+
+                        for (let i = 0; i < 60; i++) {{
+                            const el = window.parent.document.createElement('div');
+                            el.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+                            el.style.position = 'absolute';
+                            el.style.left = Math.random() * 100 + 'vw';
+                            el.style.top = '-50px';
+                            el.style.fontSize = (Math.random() * 24 + 16) + 'px';
+                            el.style.transition = 'transform ' + (Math.random() * 2 + 2) + 's linear, top ' + (Math.random() * 2 + 2) + 's linear';
+                            container.appendChild(el);
+
+                            setTimeout(() => {{
+                                el.style.top = '120vh';
+                                el.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+                            }}, 50);
+                        }}
+                        // Clean up the DOM after the animation
+                        setTimeout(() => container.remove(), 4500);
+                    }}
+                    
+                    // Trigger the chosen custom animation
+                    {js_injection}
+                </script>
+            """, height=0)
+            st.session_state.just_generated = False
