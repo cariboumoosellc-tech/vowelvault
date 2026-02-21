@@ -19,7 +19,7 @@ if "just_generated" not in st.session_state: st.session_state.just_generated = F
 APP_NAME = "WIN Time Phonics Builder"
 APP_EMOJI = "✨" 
 SIDEBAR_TITLE = "📐 Architect Tools"
-FOOTER_TEXT = "🚀 WIN Time Phonics v2.2"
+FOOTER_TEXT = "🚀 WIN Time Phonics v2.3"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 
@@ -175,7 +175,7 @@ with st.sidebar:
     st.markdown("""
         <div style="background: linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;">
             <h3 style="margin-top:0; color: #1e293b; font-size: 1.1rem;">☕ Support the App</h3>
-            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Help keep WIN Time Phonics free for teachers!</p>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">If you love generating WIN Time interventions, consider buying me a coffee to keep this tool free!</p>
             <div style="display: flex; justify-content: center; gap: 10px;">
                 <a href="https://venmo.com/u/YOUR_VENMO_USERNAME" target="_blank" style="background: #008CFF; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">Venmo</a>
                 <a href="https://paypal.me/YOUR_PAYPAL_USERNAME" target="_blank" style="background: #003087; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">PayPal</a>
@@ -207,19 +207,21 @@ with col_plan:
         </div>
         """, unsafe_allow_html=True)
     else:
-        for i in range(0, len(st.session_state.build_queue), 4):
-            cols = st.columns(4)
-            for j in range(4):
+        # CHANGED: 4 columns to 3 columns to give cards more breathing room
+        for i in range(0, len(st.session_state.build_queue), 3):
+            cols = st.columns(3)
+            for j in range(3):
                 idx = i + j
                 if idx < len(st.session_state.build_queue):
                     item = st.session_state.build_queue[idx]
                     with cols[j]:
                         display_name = "Story & Q's" if item['type'] == "Decodable Story" else item['type'].replace("Mystery Grid ", "")
+                        # CHANGED: Added CSS 'word-break: keep-all' and tweaked font-sizes so letters don't split!
                         st.markdown(f"""
                         <div class='builder-card'>
                             <small style='color:#94a3b8; font-weight:bold;'>Activity #{idx+1}</small>
-                            <div style='font-weight:900; font-size:1rem; color:#1e293b; margin: 8px 0;'>{display_name}</div>
-                            <div style='font-size:0.75rem; color:#6366f1; background:#e0e7ff; padding: 4px 8px; border-radius: 12px; display:inline-block;'>{', '.join(item['sounds'])}</div>
+                            <div style='font-weight:800; font-size:0.95rem; color:#1e293b; margin: 8px 0; word-break: keep-all; overflow-wrap: normal; line-height: 1.2;'>{display_name}</div>
+                            <div style='font-size:0.75rem; color:#6366f1; background:#e0e7ff; padding: 4px 8px; border-radius: 12px; display:inline-block; word-break: keep-all;'>{', '.join(item['sounds'])}</div>
                         </div>""", unsafe_allow_html=True)
                         if st.button("✖️ Remove", key=f"del_{item['id']}", use_container_width=True):
                             st.session_state.build_queue.pop(idx)
@@ -263,7 +265,7 @@ with col_plan:
                     if raw_text.endswith("```"): raw_text = raw_text[:-3]
                     
                     st.session_state.final_json = json.loads(raw_text.strip())
-                    st.session_state.just_generated = True # Flags the app to celebrate!
+                    st.session_state.just_generated = True 
                     st.rerun()
                 except Exception as e:
                     st.error(f"⚠️ JSON Parsing Error: {str(e)}. Please click Generate again.")
@@ -485,7 +487,6 @@ with col_res:
         st.markdown("<br>", unsafe_allow_html=True)
         st.download_button("🗝️ Download Teacher Key", tpdf, "Teacher_Key.pdf", use_container_width=True)
         
-        # --- THE CELEBRATION RANDOMIZER & AUTO-SCROLL ---
         if st.session_state.just_generated:
             anim_type = random.choice(["balloons", "snow", "school", "stars"])
             
@@ -502,10 +503,8 @@ with col_res:
             
             components.html(f"""
                 <script>
-                    // Smooth scroll to the download buttons
                     window.parent.scrollTo({{top: window.parent.document.body.scrollHeight, behavior: 'smooth'}});
                     
-                    // Custom JS Emoji Shower Engine
                     function createEmojiShower(emojis) {{
                         const container = window.parent.document.createElement('div');
                         container.style.position = 'fixed';
@@ -532,11 +531,8 @@ with col_res:
                                 el.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
                             }}, 50);
                         }}
-                        // Clean up the DOM after the animation
                         setTimeout(() => container.remove(), 4500);
                     }}
-                    
-                    // Trigger the chosen custom animation
                     {js_injection}
                 </script>
             """, height=0)
