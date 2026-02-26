@@ -20,7 +20,7 @@ if "ws_grids" not in st.session_state: st.session_state.ws_grids = {}
 APP_NAME = "WIN Time Phonics Builder"
 APP_EMOJI = "✨" 
 SIDEBAR_TITLE = "📐 Architect Tools"
-FOOTER_TEXT = "🚀 WIN Time Phonics v3.0"
+FOOTER_TEXT = "🚀 WIN Time Phonics v3.1"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 
@@ -38,10 +38,14 @@ PHONICS_MENU = {
     "Endings": ["ed", "ing", "s", "es", "er", "est"]
 }
 
+# EXPANDED THEMES
 THEMES = [
-    "None (Standard)", "Halloween 🎃", "Thanksgiving 🦃", "Christmas 🎄", "Winter Holidays ❄️", 
-    "Valentine's Day 💖", "St. Patrick's Day 🍀", "Easter 🐰", "Spring Blossoms 🌷", 
-    "Summer Break ☀️", "Fall / Autumn 🍂", "Outer Space 🚀", "Ocean Exploration 🌊", "Sports & Games ⚽"
+    "None (Standard)", "Back to School 🚌", "Halloween 🎃", "Thanksgiving 🦃", "Christmas 🎄", 
+    "Winter Holidays ❄️", "100th Day of School 💯", "Valentine's Day 💖", "St. Patrick's Day 🍀", 
+    "Easter 🐰", "Spring Blossoms 🌷", "Earth Day 🌍", "Summer Break ☀️", "Fall / Autumn 🍂", 
+    "Outer Space 🚀", "Ocean Exploration 🌊", "Sports & Games ⚽", "Superheroes 🦸", 
+    "Dinosaurs 🦖", "Animals & Pets 🐶", "Magic & Fantasy 🦄", "Pirates 🏴‍☠️", 
+    "Camping & Outdoors 🏕️", "Fairy Tales 🏰"
 ]
 
 CORE_ACTIVITIES = {
@@ -55,7 +59,7 @@ CORE_ACTIVITIES = {
 GAME_ACTIVITIES = {
     "Detective Riddle Cards": "🔍 8 cards per page with 3 logic clues each.",
     "Mystery Grid (Color-by-Code)": "🎨 FULL-PAGE 8x8 Aztec/Quilt geometric grid.",
-    "Phonics Word Search": "🔎 A 12x12 grid hiding 10 targeted phonics words.",
+    "Phonics Word Search": "🔎 A 15x15 grid hiding 10 targeted phonics words.",
     "Word Scramble": "🧩 8 scrambled words with crossword-style clues to solve."
 }
 
@@ -93,25 +97,18 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 4. PYTHON WORD SEARCH ENGINE (UPGRADED: 8 DIRECTIONS) ---
-def build_word_search(words, size=12):
+# --- 4. PYTHON WORD SEARCH ENGINE (UPGRADED TO 15x15) ---
+def build_word_search(words, size=15): # Increased to 15x15 for better spacing
     grid = [['' for _ in range(size)] for _ in range(size)]
     ans_grid = [[False for _ in range(size)] for _ in range(size)] 
     placed_words = []
     
-    # Sort by longest first for mathematically better packing
     words = sorted([w.upper().replace(" ", "") for w in words], key=len, reverse=True)
     
-    # All 8 true Word Search directions
+    # 8-way directional generation
     directions = [
-        (0, 1),   # Right
-        (1, 0),   # Down
-        (1, 1),   # Diagonal Down-Right
-        (-1, 1),  # Diagonal Up-Right
-        (0, -1),  # Left (Backwards)
-        (-1, 0),  # Up (Backwards)
-        (-1, -1), # Diagonal Up-Left (Backwards)
-        (1, -1)   # Diagonal Down-Left (Backwards)
+        (0, 1), (1, 0), (1, 1), (-1, 1), 
+        (0, -1), (-1, 0), (-1, -1), (1, -1)
     ]
     
     for word in words:
@@ -122,7 +119,6 @@ def build_word_search(words, size=12):
             r = random.randint(0, size - 1)
             c = random.randint(0, size - 1)
             
-            # Check if word fits inside the grid bounds in this direction
             if 0 <= r + (len(word) - 1) * dr < size and 0 <= c + (len(word) - 1) * dc < size:
                 can_place = True
                 for i in range(len(word)):
@@ -130,7 +126,6 @@ def build_word_search(words, size=12):
                         can_place = False
                         break
                 
-                # Place word and flag the Answer Key map
                 if can_place:
                     for i in range(len(word)):
                         grid[r + i * dr][c + i * dc] = word[i]
@@ -140,7 +135,6 @@ def build_word_search(words, size=12):
             
         if placed: placed_words.append(word)
     
-    # Fill remaining blanks with random letters
     for r in range(size):
         for c in range(size):
             if grid[r][c] == '': grid[r][c] = random.choice(string.ascii_uppercase)
@@ -262,13 +256,14 @@ with st.sidebar:
         st.session_state.build_queue = []; st.session_state.final_json = None; st.rerun()
 
     st.divider()
+    # ELEGANT TEACHER DONATION BOX
     st.markdown("""
         <div style="background: linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;">
-            <h3 style="margin-top:0; color: #1e293b; font-size: 1.1rem;">☕ Support the App</h3>
-            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">If you love generating WIN Time interventions, consider buying me a coffee!</p>
+            <h3 style="margin-top:0; color: #1e293b; font-size: 1.1rem;">💙 Support the App</h3>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Your support helps cover server costs and keeps this tool 100% free for teachers everywhere!</p>
             <div style="display: flex; justify-content: center; gap: 10px;">
-                <a href="https://venmo.com/u/YOUR_VENMO_USERNAME" target="_blank" style="background: #008CFF; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">Venmo</a>
-                <a href="https://paypal.me/YOUR_PAYPAL_USERNAME" target="_blank" style="background: #003087; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">PayPal</a>
+                <a href="https://venmo.com/u/Bradoni" target="_blank" style="background: #008CFF; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">Venmo</a>
+                <a href="https://paypal.me/WinTimePhonix" target="_blank" style="background: #003087; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">PayPal</a>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -280,7 +275,7 @@ with c1:
     st.markdown("Build targeted, themed, data-driven phonics interventions in seconds.")
 with c2: 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.download_button("📋 Download Tracker", generate_tracker_pdf(), "Skill_Tracker.pdf", "application/pdf", use_container_width=True, type="primary")
+    st.download_button("📋 Download Skill Mastery Tracker", generate_tracker_pdf(), "Skill_Mastery_Tracker.pdf", "application/pdf", use_container_width=True, type="primary")
 st.divider()
 
 # --- 8. MAIN BUILDER CANVAS ---
@@ -330,7 +325,7 @@ with col_plan:
                 THEME REQUIREMENT: {theme_instruction}
                 
                 STRICT QUANTITY & CONTENT RULES:
-                1. RIGOR: For 3rd/4th+ grade, use advanced vocabulary. NO simple words like 'cat'. 
+                1. AGE-APPROPRIATE RIGOR: The vocabulary MUST strictly align with the reading level of a {grade} student. 'Advanced' means complex decodable spelling patterns for their specific age, NOT high-school level or obscure adult vocabulary. Keep the concepts familiar to young children!
                 2. STORY: MUST be 3+ paragraphs. MUST have exactly 3 questions.
                 3. NONSENSE WORDS: EXACTLY 21 pseudo-words.
                 4. WORD SORT: At least 15 words total. Categories MUST be 1 or 2 words maximum.
@@ -430,7 +425,6 @@ def render_pdf(data, is_key=False):
     for act_idx, act in enumerate(data.get("activities", [])):
         a_type, content = act['type'], act['content']
         
-        # BLANK PAGE FIX: Only add a page if we aren't already sitting at the top of a new one!
         if pdf.get_y() > 25:
             pdf.add_page() 
         
@@ -477,7 +471,6 @@ def render_pdf(data, is_key=False):
                     else:
                         pdf.set_font("Helvetica", "", 8); pdf.cell(size, size, word, 1, 0, 'C')
                 
-                # BLANK PAGE FIX: Don't drop a line break after the very last row
                 if r < 7:
                     pdf.ln(size)
             continue
@@ -497,36 +490,36 @@ def render_pdf(data, is_key=False):
             words = content.get('word_search', [])[:12]
             
             grid_id = f"ws_{act_idx}"
+            grid_dim = 15 # The new 15x15 expansion
             if grid_id not in st.session_state.ws_grids:
-                st.session_state.ws_grids[grid_id] = build_word_search(words, 12)
+                st.session_state.ws_grids[grid_id] = build_word_search(words, grid_dim)
             
             grid, ans_grid, placed_words = st.session_state.ws_grids[grid_id]
             
-            size = 12
-            start_x = (210 - (12 * size)) / 2
+            cell_size = 10 # 10mm blocks fit perfectly on A4
+            start_x = (210 - (grid_dim * cell_size)) / 2
             pdf.set_font("Courier", "B", 14)
-            for r in range(12):
+            for r in range(grid_dim):
                 pdf.set_x(start_x)
-                for c in range(12):
+                for c in range(grid_dim):
                     letter = grid[r][c]
                     if is_key:
                         if ans_grid[r][c]:
                             pdf.set_text_color(220, 0, 0) 
                             pdf.set_fill_color(255, 235, 235) 
-                            pdf.cell(size, size, letter, 1, 0, 'C', fill=True)
+                            pdf.cell(cell_size, cell_size, letter, 1, 0, 'C', fill=True)
                         else:
                             pdf.set_text_color(180, 180, 180) 
-                            pdf.cell(size, size, letter, 0, 0, 'C')
+                            pdf.cell(cell_size, cell_size, letter, 0, 0, 'C')
                     else:
                         pdf.set_text_color(0, 0, 0)
-                        pdf.cell(size, size, letter, 0, 0, 'C')
+                        pdf.cell(cell_size, cell_size, letter, 0, 0, 'C')
                 
-                # BLANK PAGE FIX: Prevent trailing space pushing cursor over margin
-                if r < 11:
-                    pdf.ln(size)
+                if r < grid_dim - 1:
+                    pdf.ln(cell_size)
             
             pdf.set_text_color(0, 0, 0) 
-            pdf.ln(10)
+            pdf.ln(20) # MASSIVE SPACER FOR WORD BANK
             pdf.set_font("Helvetica", "B", 14); pdf.set_x(15); pdf.cell(0, 8, "Word Bank:", ln=True, align="C")
             pdf.set_font("Helvetica", "", 12); pdf.set_x(15)
             pdf.multi_cell(0, 8, "   |   ".join(placed_words), align="C")
@@ -546,8 +539,6 @@ def render_pdf(data, is_key=False):
             scrambles = content.get("word_scramble", [])[:8]
             for i, s in enumerate(scrambles):
                 pdf.set_x(15)
-                
-                # Line 1: Scrambled word + Answer Line
                 pdf.set_font("Helvetica", "B", 14)
                 pdf.cell(50, 8, clean_text(s.get('scrambled', '')), 0, 0)
                 
@@ -557,12 +548,10 @@ def render_pdf(data, is_key=False):
                 else:
                     pdf.set_font("Courier", "", 12); pdf.cell(60, 8, "________________", 0, 1)
                 
-                # Line 2: Clue
                 pdf.set_x(15)
                 pdf.set_font("Helvetica", "I", 11)
                 pdf.multi_cell(0, 6, f"Clue: {clean_text(s.get('clue', ''))}")
                 
-                # BLANK PAGE FIX: Drastically tightened this spacing so they pack perfectly on 1 page!
                 if i < len(scrambles) - 1:
                     pdf.ln(4) 
             continue
