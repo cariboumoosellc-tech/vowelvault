@@ -2,7 +2,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 from fpdf import FPDF
 import google.generativeai as genai
-import os, json, random, uuid, string
+import os, json, random, uuid, string, ast
 from dotenv import load_dotenv
 
 # --- 1. CONFIG & MEMORY ---
@@ -12,7 +12,7 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 if "build_queue" not in st.session_state: st.session_state.build_queue = []
 if "final_json" not in st.session_state: st.session_state.final_json = None
 if "just_generated" not in st.session_state: st.session_state.just_generated = False
-if "ws_grids" not in st.session_state: st.session_state.ws_grids = {} # Store word search grids so they don't change on re-render
+if "ws_grids" not in st.session_state: st.session_state.ws_grids = {} 
 
 # ==========================================
 # 🎨 BRANDING SECTION
@@ -20,7 +20,7 @@ if "ws_grids" not in st.session_state: st.session_state.ws_grids = {} # Store wo
 APP_NAME = "WIN Time Phonics Builder"
 APP_EMOJI = "✨" 
 SIDEBAR_TITLE = "📐 Architect Tools"
-FOOTER_TEXT = "🚀 WIN Time Phonics v2.6"
+FOOTER_TEXT = "🚀 WIN Time Phonics v2.7"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 
@@ -95,18 +95,15 @@ st.markdown("""
 
 # --- 4. PYTHON WORD SEARCH ENGINE ---
 def build_word_search(words, size=12):
-    """Mathematically places words in a grid and fills with random letters."""
     grid = [['' for _ in range(size)] for _ in range(size)]
     placed_words = []
-    
-    # Sort by longest first for better packing
     words = sorted([w.upper().replace(" ", "") for w in words], key=len, reverse=True)
     
     for word in words:
         placed = False
         attempts = 0
         while not placed and attempts < 100:
-            direction = random.choice([(0, 1), (1, 0)]) # Right or Down
+            direction = random.choice([(0, 1), (1, 0)]) 
             r = random.randint(0, size - 1)
             c = random.randint(0, size - 1)
             if direction == (0, 1) and c + len(word) <= size:
@@ -182,15 +179,39 @@ def get_color_rgb(color_name):
 # --- 6. SIDEBAR ARCHITECT ---
 with st.sidebar:
     st.title(SIDEBAR_TITLE)
+    
     with st.container():
         st.subheader("1. Setup Profile")
         grade = st.selectbox("📚 Grade Level", ["1st", "2nd", "3rd", "4th+"])
         r_level = st.select_slider("🧠 Difficulty", options=["Beginning", "Intermediate", "Advanced"])
         sel_theme = st.selectbox("🎈 Theme / Holiday", THEMES, help="The AI will weave this theme into the stories, sentences, and vocabulary.")
-    
+        
+        # RESTORED AND UPGRADED AUTO-BUILD BUTTON
+        if st.button("🪄 Auto-Fill Plan (Uses Profile)", use_container_width=True, type="primary"):
+            st.session_state.build_queue = []
+            grade_logic = {
+                "1st": ["CVC (Short Vowels)", "Consonant Digraphs", "Consonant Blends"],
+                "2nd": ["Magic E (CVCe)", "Vowel r", "Predictable Vowel Teams"],
+                "3rd": ["Variant Vowel Teams", "Multisyllable", "Endings"],
+                "4th+": ["Multisyllable", "Endings", "Mixed Review (All Types)"]
+            }
+            # Pick a smart category based on Grade
+            smart_cat = random.choice(grade_logic[grade])
+            smart_target = [random.choice(PHONICS_MENU[smart_cat])]
+            
+            # Pick 3 Core and 2 Games randomly
+            core_choices = random.sample(list(CORE_ACTIVITIES.keys()), 3)
+            game_choices = random.sample(list(GAME_ACTIVITIES.keys()), 2)
+            
+            for c in core_choices:
+                st.session_state.build_queue.append({"type": c, "nonsense": (c=="Nonsense Word Fluency"), "id": str(uuid.uuid4()), "cat": smart_cat, "sounds": smart_target, "is_game": False})
+            for g in game_choices:
+                st.session_state.build_queue.append({"type": g, "nonsense": False, "id": str(uuid.uuid4()), "cat": smart_cat, "sounds": smart_target, "is_game": True})
+            st.rerun()
+            
     st.divider()
     with st.container():
-        st.subheader("2. Choose Skills")
+        st.subheader("2. Choose Skills Manually")
         sel_cat = st.selectbox("🎯 Phonics Category", list(PHONICS_MENU.keys()))
         sel_targets = st.multiselect("📌 Specific Targets", PHONICS_MENU[sel_cat], default=[PHONICS_MENU[sel_cat][0]])
     
@@ -215,7 +236,6 @@ with st.sidebar:
             })
 
     st.divider()
-    st.subheader("⚡ Quick Actions")
     if st.button("🗑️ Clear Plan", use_container_width=True):
         st.session_state.build_queue = []; st.session_state.final_json = None; st.rerun()
 
@@ -223,10 +243,10 @@ with st.sidebar:
     st.markdown("""
         <div style="background: linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;">
             <h3 style="margin-top:0; color: #1e293b; font-size: 1.1rem;">☕ Support the App</h3>
-            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">If you love generating WIN Time interventions, consider buying me a coffee!</p>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">If you love generating WIN Time interventions, help keep this free for teachers!</p>
             <div style="display: flex; justify-content: center; gap: 10px;">
-                <a href="https://venmo.com/u/YOUR_VENMO_USERNAME" target="_blank" style="background: #008CFF; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">Venmo</a>
-                <a href="https://paypal.me/YOUR_PAYPAL_USERNAME" target="_blank" style="background: #003087; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">PayPal</a>
+                <a href="https://venmo.com/u/BRADONI" target="_blank" style="background: #008CFF; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">Venmo</a>
+                <a href="https://paypal.me/WINTIMEPHONIX" target="_blank" style="background: #003087; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">PayPal</a>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -250,7 +270,7 @@ with col_plan:
         st.markdown("""
         <div class='empty-state'>
             <h3 style='margin:0; color:#94a3b8;'>Your queue is empty</h3>
-            <p style='font-size: 14px; margin-top:5px;'>Use the <b>Architect Tools</b> in the sidebar to add activities.</p>
+            <p style='font-size: 14px; margin-top:5px;'>Use the <b>Architect Tools</b> in the sidebar to add activities, or click <b>Auto-Fill Plan</b>.</p>
         </div>
         """, unsafe_allow_html=True)
     else:
@@ -278,7 +298,7 @@ with col_plan:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚀 GENERATE WORKSHEET", type="primary", use_container_width=True):
             with st.spinner("✨ AI is crafting rigorous, themed content..."):
-                st.session_state.ws_grids = {} # Reset the word search memory on new generation
+                st.session_state.ws_grids = {} 
                 
                 theme_instruction = f"The ENTIRE worksheet (story, sentences, vocabulary, riddles) MUST be themed around: {sel_theme}." if sel_theme != "None (Standard)" else "Standard non-themed vocabulary."
                 
@@ -291,7 +311,7 @@ with col_plan:
                 1. RIGOR: For 3rd/4th+ grade, use advanced vocabulary. NO simple words like 'cat'. 
                 2. STORY: MUST be 3+ paragraphs. MUST have exactly 3 questions.
                 3. NONSENSE WORDS: EXACTLY 21 pseudo-words.
-                4. WORD SORT: At least 15 words total. Categories MUST be 1 or 2 words maximum (e.g. "-ed" or "Long A"). 
+                4. WORD SORT: At least 15 words total. Categories MUST be 1 or 2 words maximum.
                 5. SENTENCE MATCH: EXACTLY 5 sentences. Halves MUST be under 6 words each.
                 6. SOUND MAPPING: EXACTLY 10 words.
                 7. RIDDLES: EXACTLY 8 distinct riddle cards.
@@ -299,8 +319,8 @@ with col_plan:
                 9. WORD SEARCH: Provide EXACTLY 10 targeted phonics words.
                 10. WORD SCRAMBLE: Provide EXACTLY 8 scrambled words with crossword-style clues.
                 
-                JSON SAFETY: NO TRAILING COMMAS. Do NOT use double quotes (") inside strings. Use single quotes (') for dialogue.
-                Output raw JSON ONLY:
+                JSON SAFETY: You MUST output ONLY valid JSON. Use DOUBLE QUOTES (") for keys and values. NO trailing commas.
+                Output Schema Format:
                 {{
                   "overview": "3 sentence intro.", "target_words": ["word1", "word2"],
                   "activities": [ {{
@@ -310,7 +330,7 @@ with col_plan:
                       "words": ["pseudo1"], "detective_task": ["1. Task"], "sort_cats": {{"Cat1":["w1"]}},
                       "match_l": ["Left 1"], "match_r": ["Right 1"], "map_words": ["w1"], "riddles": [{{"clue1":"c1","clue2":"c2","clue3":"c3","ans":"a"}}],
                       "mystery_grid": {{ "legend": {{"Red":"target 1", "Blue":"target 2"}}, "color_words": {{"Red":["w1","w2"]}} }},
-                      "word_search": ["w1", "w2", "w3", "w4", "w5", "w6", "w7", "w8", "w9", "w10"],
+                      "word_search": ["w1", "w2", "w3"],
                       "word_scramble": [{{"word": "BLAST", "scrambled": "L B T S A", "clue": "A rocket taking off"}}]
                     }}
                   }} ]
@@ -320,15 +340,23 @@ with col_plan:
                     model = genai.GenerativeModel("gemini-2.5-flash")
                     response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json", "max_output_tokens": 8192})
                     raw_text = response.text.strip()
-                    if raw_text.startswith("```json"): raw_text = raw_text[7:]
-                    if raw_text.startswith("```"): raw_text = raw_text[3:]
-                    if raw_text.endswith("```"): raw_text = raw_text[:-3]
                     
-                    st.session_state.final_json = json.loads(raw_text.strip())
+                    if raw_text.startswith("```json"): raw_text = raw_text[7:]
+                    elif raw_text.startswith("```"): raw_text = raw_text[3:]
+                    if raw_text.endswith("```"): raw_text = raw_text[:-3]
+                    raw_text = raw_text.strip()
+                    
+                    # 🛡️ THE TITANIUM PARSER: Fallback to Python AST if strict JSON fails
+                    try:
+                        parsed_data = json.loads(raw_text)
+                    except json.JSONDecodeError:
+                        parsed_data = ast.literal_eval(raw_text)
+                    
+                    st.session_state.final_json = parsed_data
                     st.session_state.just_generated = True 
                     st.rerun()
                 except Exception as e:
-                    st.error(f"⚠️ JSON Parsing Error: {str(e)}. Please click Generate again.")
+                    st.error(f"⚠️ Data Formatting Error: {str(e)}. The AI made a typo. Please click Generate again.")
 
 # --- 9. BULLETPROOF PDF RENDERER ---
 def clean_text(t): return str(t).replace("’","'").replace("“",'"').replace("”",'"').replace("**","")
@@ -432,14 +460,12 @@ def render_pdf(data, is_key=False):
             pdf.ln(5)
             words = content.get('word_search', [])[:12]
             
-            # Use cached grid so it doesn't shuffle when switching between Key and Student pdfs
             grid_id = f"ws_{act_idx}"
             if grid_id not in st.session_state.ws_grids:
                 st.session_state.ws_grids[grid_id] = build_word_search(words, 12)
             
             grid, placed_words = st.session_state.ws_grids[grid_id]
             
-            # Print Grid (12x12, 10mm boxes)
             size = 12
             start_x = (210 - (12 * size)) / 2
             pdf.set_font("Courier", "B", 14)
@@ -506,13 +532,14 @@ def render_pdf(data, is_key=False):
             pdf.ln(5); pdf.set_font("Helvetica", "B", 11); pdf.set_x(15); pdf.cell(0, 8, "Evidence Check:", ln=True)
             pdf.set_font("Helvetica", "", 11)
             for q in content.get('questions', []):
-                pdf.set_x(15); pdf.multi_cell(0, 7, f"Q: {clean_text(q.get('q', ''))}")
+                q_str = clean_text(q.get('q', ''))
+                a_str = clean_text(q.get('a', ''))
+                pdf.set_x(15); pdf.multi_cell(0, 7, f"Q: {q_str}")
                 if is_key: 
-                    pdf.set_text_color(200,0,0); pdf.set_x(15); pdf.multi_cell(0, 7, f"A: {clean_text(q.get('a', ''))}"); pdf.set_text_color(0,0,0); pdf.ln(2)
+                    pdf.set_text_color(200,0,0); pdf.set_x(15); pdf.multi_cell(0, 7, f"A: {a_str}"); pdf.set_text_color(0,0,0); pdf.ln(2)
                 else: 
                     pdf.ln(8)
 
-        # --- NONSENSE WORD FLUENCY ---
         elif a_type == "Nonsense Word Fluency":
             words = content.get('words', [])[:21]
             pdf.set_font("Helvetica", "B", 24)
@@ -526,7 +553,6 @@ def render_pdf(data, is_key=False):
                 for task in tasks:
                     pdf.set_x(15); pdf.multi_cell(0, 6, clean_text(task))
 
-        # --- WORD BANK SORT ---
         elif a_type == "Word Bank Sort":
             cats = list(content.get('sort_cats', {}).keys())
             if cats:
@@ -558,7 +584,6 @@ def render_pdf(data, is_key=False):
                         pdf.ln()
                     pdf.set_text_color(0, 0, 0)
 
-        # --- SENTENCE MATCH ---
         elif a_type == "Sentence Match":
             l, r = content.get('match_l', []), content.get('match_r', [])
             dr = r if is_key else random.sample(r, len(r))
@@ -572,7 +597,6 @@ def render_pdf(data, is_key=False):
                 pdf.cell(85, 10, clean_text(dr[i])[:50] if i < len(dr) else "", 0, 1, 'R')
                 pdf.set_text_color(0, 0, 0)
 
-        # --- SOUND MAPPING ---
         elif a_type == "Sound Mapping":
             for word in content.get('map_words', []):
                 pdf.set_x(15)
@@ -583,7 +607,6 @@ def render_pdf(data, is_key=False):
                     pdf.cell(20, 12, "", 1, 0); pdf.cell(20, 12, "", 1, 0); pdf.cell(20, 12, "", 1, 1)
                 pdf.ln(2)
 
-        # --- RIDDLE CARDS ---
         elif a_type == "Detective Riddle Cards":
             cards = content.get('riddles', [])[:8]
             xs, ys = 15, 45 
