@@ -20,7 +20,7 @@ if "ws_grids" not in st.session_state: st.session_state.ws_grids = {}
 APP_NAME = "WIN Time Phonics Builder"
 APP_EMOJI = "✨" 
 SIDEBAR_TITLE = "📐 Architect Tools"
-FOOTER_TEXT = "🚀 WIN Time Phonics v2.7"
+FOOTER_TEXT = "🚀 WIN Time Phonics v2.8"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 
@@ -93,9 +93,10 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 4. PYTHON WORD SEARCH ENGINE ---
+# --- 4. PYTHON WORD SEARCH ENGINE (UPGRADED WITH ANSWER KEY) ---
 def build_word_search(words, size=12):
     grid = [['' for _ in range(size)] for _ in range(size)]
+    ans_grid = [[False for _ in range(size)] for _ in range(size)] # Map of correct answers
     placed_words = []
     words = sorted([w.upper().replace(" ", "") for w in words], key=len, reverse=True)
     
@@ -108,11 +109,15 @@ def build_word_search(words, size=12):
             c = random.randint(0, size - 1)
             if direction == (0, 1) and c + len(word) <= size:
                 if all(grid[r][c+i] in ('', word[i]) for i in range(len(word))):
-                    for i in range(len(word)): grid[r][c+i] = word[i]
+                    for i in range(len(word)): 
+                        grid[r][c+i] = word[i]
+                        ans_grid[r][c+i] = True
                     placed = True
             elif direction == (1, 0) and r + len(word) <= size:
                 if all(grid[r+i][c] in ('', word[i]) for i in range(len(word))):
-                    for i in range(len(word)): grid[r+i][c] = word[i]
+                    for i in range(len(word)): 
+                        grid[r+i][c] = word[i]
+                        ans_grid[r+i][c] = True
                     placed = True
             attempts += 1
         if placed: placed_words.append(word)
@@ -120,7 +125,7 @@ def build_word_search(words, size=12):
     for r in range(size):
         for c in range(size):
             if grid[r][c] == '': grid[r][c] = random.choice(string.ascii_uppercase)
-    return grid, placed_words
+    return grid, ans_grid, placed_words
 
 # --- 5. PDF GENERATORS ---
 def generate_tracker_pdf():
@@ -186,7 +191,6 @@ with st.sidebar:
         r_level = st.select_slider("🧠 Difficulty", options=["Beginning", "Intermediate", "Advanced"])
         sel_theme = st.selectbox("🎈 Theme / Holiday", THEMES, help="The AI will weave this theme into the stories, sentences, and vocabulary.")
         
-        # RESTORED AND UPGRADED AUTO-BUILD BUTTON
         if st.button("🪄 Auto-Fill Plan (Uses Profile)", use_container_width=True, type="primary"):
             st.session_state.build_queue = []
             grade_logic = {
@@ -195,11 +199,9 @@ with st.sidebar:
                 "3rd": ["Variant Vowel Teams", "Multisyllable", "Endings"],
                 "4th+": ["Multisyllable", "Endings", "Mixed Review (All Types)"]
             }
-            # Pick a smart category based on Grade
             smart_cat = random.choice(grade_logic[grade])
             smart_target = [random.choice(PHONICS_MENU[smart_cat])]
             
-            # Pick 3 Core and 2 Games randomly
             core_choices = random.sample(list(CORE_ACTIVITIES.keys()), 3)
             game_choices = random.sample(list(GAME_ACTIVITIES.keys()), 2)
             
@@ -243,10 +245,10 @@ with st.sidebar:
     st.markdown("""
         <div style="background: linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%); padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;">
             <h3 style="margin-top:0; color: #1e293b; font-size: 1.1rem;">☕ Support the App</h3>
-            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">If you love generating WIN Time interventions, help keep this free for teachers!</p>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">If you love generating WIN Time interventions, consider buying me a coffee!</p>
             <div style="display: flex; justify-content: center; gap: 10px;">
-                <a href="https://venmo.com/u/BRADONI" target="_blank" style="background: #008CFF; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">Venmo</a>
-                <a href="https://paypal.me/WINTIMEPHONIX" target="_blank" style="background: #003087; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">PayPal</a>
+                <a href="https://venmo.com/u/YOUR_VENMO_USERNAME" target="_blank" style="background: #008CFF; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">Venmo</a>
+                <a href="https://paypal.me/YOUR_PAYPAL_USERNAME" target="_blank" style="background: #003087; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 12px; transition: 0.2s;">PayPal</a>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -258,7 +260,7 @@ with c1:
     st.markdown("Build targeted, themed, data-driven phonics interventions in seconds.")
 with c2: 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.download_button("📋 Download Student Skill Tracker", generate_tracker_pdf(), "Skill_Tracker.pdf", "application/pdf", use_container_width=True, type="primary")
+    st.download_button("📋 Download Tracker", generate_tracker_pdf(), "Skill_Tracker.pdf", "application/pdf", use_container_width=True, type="primary")
 st.divider()
 
 # --- 8. MAIN BUILDER CANVAS ---
@@ -319,7 +321,7 @@ with col_plan:
                 9. WORD SEARCH: Provide EXACTLY 10 targeted phonics words.
                 10. WORD SCRAMBLE: Provide EXACTLY 8 scrambled words with crossword-style clues.
                 
-                JSON SAFETY: You MUST output ONLY valid JSON. Use DOUBLE QUOTES (") for keys and values. NO trailing commas.
+                JSON SAFETY: You MUST output ONLY valid JSON. Use DOUBLE QUOTES (") for keys and values. NO trailing commas. Do NOT use unescaped newlines.
                 Output Schema Format:
                 {{
                   "overview": "3 sentence intro.", "target_words": ["word1", "word2"],
@@ -336,27 +338,36 @@ with col_plan:
                   }} ]
                 }}
                 """
-                try:
-                    model = genai.GenerativeModel("gemini-2.5-flash")
-                    response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json", "max_output_tokens": 8192})
-                    raw_text = response.text.strip()
-                    
-                    if raw_text.startswith("```json"): raw_text = raw_text[7:]
-                    elif raw_text.startswith("```"): raw_text = raw_text[3:]
-                    if raw_text.endswith("```"): raw_text = raw_text[:-3]
-                    raw_text = raw_text.strip()
-                    
-                    # 🛡️ THE TITANIUM PARSER: Fallback to Python AST if strict JSON fails
+                
+                # --- THE SILENT RETRY LOOP ---
+                success = False
+                for attempt in range(3):
                     try:
-                        parsed_data = json.loads(raw_text)
-                    except json.JSONDecodeError:
-                        parsed_data = ast.literal_eval(raw_text)
-                    
-                    st.session_state.final_json = parsed_data
-                    st.session_state.just_generated = True 
+                        model = genai.GenerativeModel("gemini-2.5-flash")
+                        response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json", "max_output_tokens": 8192})
+                        raw_text = response.text.strip()
+                        
+                        if raw_text.startswith("```json"): raw_text = raw_text[7:]
+                        elif raw_text.startswith("```"): raw_text = raw_text[3:]
+                        if raw_text.endswith("```"): raw_text = raw_text[:-3]
+                        raw_text = raw_text.strip()
+                        
+                        try:
+                            parsed_data = json.loads(raw_text)
+                        except json.JSONDecodeError:
+                            parsed_data = ast.literal_eval(raw_text) # Titanium fallback
+                            
+                        st.session_state.final_json = parsed_data
+                        st.session_state.just_generated = True 
+                        success = True
+                        break # Success! Exit the retry loop.
+                    except Exception:
+                        continue # Failed? Immediately try again silently.
+                
+                if success:
                     st.rerun()
-                except Exception as e:
-                    st.error(f"⚠️ Data Formatting Error: {str(e)}. The AI made a typo. Please click Generate again.")
+                else:
+                    st.error("⚠️ The AI hit a persistent formatting snag. Please click Generate again!")
 
 # --- 9. BULLETPROOF PDF RENDERER ---
 def clean_text(t): return str(t).replace("’","'").replace("“",'"').replace("”",'"').replace("**","")
@@ -464,7 +475,8 @@ def render_pdf(data, is_key=False):
             if grid_id not in st.session_state.ws_grids:
                 st.session_state.ws_grids[grid_id] = build_word_search(words, 12)
             
-            grid, placed_words = st.session_state.ws_grids[grid_id]
+            # Unpack the new 3-variable grid data (including answers)
+            grid, ans_grid, placed_words = st.session_state.ws_grids[grid_id]
             
             size = 12
             start_x = (210 - (12 * size)) / 2
@@ -473,9 +485,21 @@ def render_pdf(data, is_key=False):
                 pdf.set_x(start_x)
                 for c in range(12):
                     letter = grid[r][c]
-                    pdf.cell(size, size, letter, 0, 0, 'C')
+                    # TEACHER KEY HIGHLIGHTER LOGIC
+                    if is_key:
+                        if ans_grid[r][c]:
+                            pdf.set_text_color(220, 0, 0) # Bold Red
+                            pdf.set_fill_color(255, 235, 235) # Light red highlight
+                            pdf.cell(size, size, letter, 1, 0, 'C', fill=True)
+                        else:
+                            pdf.set_text_color(180, 180, 180) # Dim non-answers
+                            pdf.cell(size, size, letter, 0, 0, 'C')
+                    else:
+                        pdf.set_text_color(0, 0, 0)
+                        pdf.cell(size, size, letter, 0, 0, 'C')
                 pdf.ln(size)
             
+            pdf.set_text_color(0, 0, 0) # Reset color safety
             pdf.ln(10)
             pdf.set_font("Helvetica", "B", 14); pdf.set_x(15); pdf.cell(0, 8, "Word Bank:", ln=True, align="C")
             pdf.set_font("Helvetica", "", 12); pdf.set_x(15)
@@ -683,4 +707,3 @@ with col_res:
                 </script>
             """, height=0)
             st.session_state.just_generated = False
-
