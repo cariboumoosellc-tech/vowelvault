@@ -258,7 +258,7 @@ with c1:
     st.markdown("Build targeted, themed, data-driven phonics interventions in seconds.")
 with c2: 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.download_button("📋 Download Tracker", generate_tracker_pdf(), "Skill_Tracker.pdf", "application/pdf", use_container_width=True, type="primary")
+    st.download_button("📋 Download Student Skill Tracker", generate_tracker_pdf(), "Skill_Tracker.pdf", "application/pdf", use_container_width=True, type="primary")
 st.divider()
 
 # --- 8. MAIN BUILDER CANVAS ---
@@ -683,3 +683,4 @@ with col_res:
                 </script>
             """, height=0)
             st.session_state.just_generated = False
+
