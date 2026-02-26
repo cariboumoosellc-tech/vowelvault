@@ -20,7 +20,7 @@ if "ws_grids" not in st.session_state: st.session_state.ws_grids = {}
 APP_NAME = "WIN Time Phonics Builder"
 APP_EMOJI = "✨" 
 SIDEBAR_TITLE = "📐 Architect Tools"
-FOOTER_TEXT = "🚀 WIN Time Phonics v2.8"
+FOOTER_TEXT = "🚀 WIN Time Phonics v3.0"
 
 st.set_page_config(page_title=APP_NAME, layout="wide", page_icon=APP_EMOJI)
 
@@ -93,38 +93,58 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 4. PYTHON WORD SEARCH ENGINE (UPGRADED WITH ANSWER KEY) ---
+# --- 4. PYTHON WORD SEARCH ENGINE (UPGRADED: 8 DIRECTIONS) ---
 def build_word_search(words, size=12):
     grid = [['' for _ in range(size)] for _ in range(size)]
-    ans_grid = [[False for _ in range(size)] for _ in range(size)] # Map of correct answers
+    ans_grid = [[False for _ in range(size)] for _ in range(size)] 
     placed_words = []
+    
+    # Sort by longest first for mathematically better packing
     words = sorted([w.upper().replace(" ", "") for w in words], key=len, reverse=True)
+    
+    # All 8 true Word Search directions
+    directions = [
+        (0, 1),   # Right
+        (1, 0),   # Down
+        (1, 1),   # Diagonal Down-Right
+        (-1, 1),  # Diagonal Up-Right
+        (0, -1),  # Left (Backwards)
+        (-1, 0),  # Up (Backwards)
+        (-1, -1), # Diagonal Up-Left (Backwards)
+        (1, -1)   # Diagonal Down-Left (Backwards)
+    ]
     
     for word in words:
         placed = False
         attempts = 0
-        while not placed and attempts < 100:
-            direction = random.choice([(0, 1), (1, 0)]) 
+        while not placed and attempts < 200:
+            dr, dc = random.choice(directions)
             r = random.randint(0, size - 1)
             c = random.randint(0, size - 1)
-            if direction == (0, 1) and c + len(word) <= size:
-                if all(grid[r][c+i] in ('', word[i]) for i in range(len(word))):
-                    for i in range(len(word)): 
-                        grid[r][c+i] = word[i]
-                        ans_grid[r][c+i] = True
-                    placed = True
-            elif direction == (1, 0) and r + len(word) <= size:
-                if all(grid[r+i][c] in ('', word[i]) for i in range(len(word))):
-                    for i in range(len(word)): 
-                        grid[r+i][c] = word[i]
-                        ans_grid[r+i][c] = True
+            
+            # Check if word fits inside the grid bounds in this direction
+            if 0 <= r + (len(word) - 1) * dr < size and 0 <= c + (len(word) - 1) * dc < size:
+                can_place = True
+                for i in range(len(word)):
+                    if grid[r + i * dr][c + i * dc] not in ('', word[i]):
+                        can_place = False
+                        break
+                
+                # Place word and flag the Answer Key map
+                if can_place:
+                    for i in range(len(word)):
+                        grid[r + i * dr][c + i * dc] = word[i]
+                        ans_grid[r + i * dr][c + i * dc] = True
                     placed = True
             attempts += 1
+            
         if placed: placed_words.append(word)
     
+    # Fill remaining blanks with random letters
     for r in range(size):
         for c in range(size):
             if grid[r][c] == '': grid[r][c] = random.choice(string.ascii_uppercase)
+            
     return grid, ans_grid, placed_words
 
 # --- 5. PDF GENERATORS ---
@@ -318,8 +338,8 @@ with col_plan:
                 6. SOUND MAPPING: EXACTLY 10 words.
                 7. RIDDLES: EXACTLY 8 distinct riddle cards.
                 8. MYSTERY GRID: Choose EXACTLY 4 distinct colors. EXACTLY 8 unique words for EACH color.
-                9. WORD SEARCH: Provide EXACTLY 10 targeted phonics words.
-                10. WORD SCRAMBLE: Provide EXACTLY 8 scrambled words with crossword-style clues.
+                9. WORD SEARCH: Provide EXACTLY 10 targeted phonics words. (Max 10 letters per word).
+                10. WORD SCRAMBLE: Provide EXACTLY 8 scrambled words. Clues MUST be short (under 10 words).
                 
                 JSON SAFETY: You MUST output ONLY valid JSON. Use DOUBLE QUOTES (") for keys and values. NO trailing commas. Do NOT use unescaped newlines.
                 Output Schema Format:
@@ -339,7 +359,6 @@ with col_plan:
                 }}
                 """
                 
-                # --- THE SILENT RETRY LOOP ---
                 success = False
                 for attempt in range(3):
                     try:
@@ -355,19 +374,19 @@ with col_plan:
                         try:
                             parsed_data = json.loads(raw_text)
                         except json.JSONDecodeError:
-                            parsed_data = ast.literal_eval(raw_text) # Titanium fallback
+                            parsed_data = ast.literal_eval(raw_text) 
                             
                         st.session_state.final_json = parsed_data
                         st.session_state.just_generated = True 
                         success = True
-                        break # Success! Exit the retry loop.
+                        break 
                     except Exception:
-                        continue # Failed? Immediately try again silently.
+                        continue 
                 
                 if success:
                     st.rerun()
                 else:
-                    st.error("⚠️ The AI hit a persistent formatting snag. Please click Generate again!")
+                    st.error("⚠️ The AI hit a persistent formatting snag. Please click Generate again.")
 
 # --- 9. BULLETPROOF PDF RENDERER ---
 def clean_text(t): return str(t).replace("’","'").replace("“",'"').replace("”",'"').replace("**","")
@@ -410,7 +429,10 @@ def render_pdf(data, is_key=False):
     # ACTIVITIES
     for act_idx, act in enumerate(data.get("activities", [])):
         a_type, content = act['type'], act['content']
-        pdf.add_page() 
+        
+        # BLANK PAGE FIX: Only add a page if we aren't already sitting at the top of a new one!
+        if pdf.get_y() > 25:
+            pdf.add_page() 
         
         # --- GAME: MYSTERY GRID ---
         if a_type == "Mystery Grid (Color-by-Code)":
@@ -454,7 +476,10 @@ def render_pdf(data, is_key=False):
                         pdf.set_text_color(0,0,0)
                     else:
                         pdf.set_font("Helvetica", "", 8); pdf.cell(size, size, word, 1, 0, 'C')
-                pdf.ln(size)
+                
+                # BLANK PAGE FIX: Don't drop a line break after the very last row
+                if r < 7:
+                    pdf.ln(size)
             continue
             
         # --- GAME: PYTHON WORD SEARCH ---
@@ -475,7 +500,6 @@ def render_pdf(data, is_key=False):
             if grid_id not in st.session_state.ws_grids:
                 st.session_state.ws_grids[grid_id] = build_word_search(words, 12)
             
-            # Unpack the new 3-variable grid data (including answers)
             grid, ans_grid, placed_words = st.session_state.ws_grids[grid_id]
             
             size = 12
@@ -485,21 +509,23 @@ def render_pdf(data, is_key=False):
                 pdf.set_x(start_x)
                 for c in range(12):
                     letter = grid[r][c]
-                    # TEACHER KEY HIGHLIGHTER LOGIC
                     if is_key:
                         if ans_grid[r][c]:
-                            pdf.set_text_color(220, 0, 0) # Bold Red
-                            pdf.set_fill_color(255, 235, 235) # Light red highlight
+                            pdf.set_text_color(220, 0, 0) 
+                            pdf.set_fill_color(255, 235, 235) 
                             pdf.cell(size, size, letter, 1, 0, 'C', fill=True)
                         else:
-                            pdf.set_text_color(180, 180, 180) # Dim non-answers
+                            pdf.set_text_color(180, 180, 180) 
                             pdf.cell(size, size, letter, 0, 0, 'C')
                     else:
                         pdf.set_text_color(0, 0, 0)
                         pdf.cell(size, size, letter, 0, 0, 'C')
-                pdf.ln(size)
+                
+                # BLANK PAGE FIX: Prevent trailing space pushing cursor over margin
+                if r < 11:
+                    pdf.ln(size)
             
-            pdf.set_text_color(0, 0, 0) # Reset color safety
+            pdf.set_text_color(0, 0, 0) 
             pdf.ln(10)
             pdf.set_font("Helvetica", "B", 14); pdf.set_x(15); pdf.cell(0, 8, "Word Bank:", ln=True, align="C")
             pdf.set_font("Helvetica", "", 12); pdf.set_x(15)
@@ -520,18 +546,25 @@ def render_pdf(data, is_key=False):
             scrambles = content.get("word_scramble", [])[:8]
             for i, s in enumerate(scrambles):
                 pdf.set_x(15)
+                
+                # Line 1: Scrambled word + Answer Line
                 pdf.set_font("Helvetica", "B", 14)
-                pdf.cell(50, 10, clean_text(s.get('scrambled', '')), 0, 0)
+                pdf.cell(50, 8, clean_text(s.get('scrambled', '')), 0, 0)
                 
                 if is_key:
                     pdf.set_font("Helvetica", "B", 12); pdf.set_text_color(200, 0, 0)
-                    pdf.cell(50, 10, clean_text(s.get('word', '')), 0, 0); pdf.set_text_color(0, 0, 0)
+                    pdf.cell(60, 8, clean_text(s.get('word', '')), 0, 1); pdf.set_text_color(0, 0, 0) 
                 else:
-                    pdf.set_font("Courier", "", 12); pdf.cell(50, 10, "________________", 0, 0)
+                    pdf.set_font("Courier", "", 12); pdf.cell(60, 8, "________________", 0, 1)
                 
-                pdf.set_font("Helvetica", "", 11)
-                pdf.multi_cell(0, 10, f"Clue: {clean_text(s.get('clue', ''))}")
-                pdf.ln(5)
+                # Line 2: Clue
+                pdf.set_x(15)
+                pdf.set_font("Helvetica", "I", 11)
+                pdf.multi_cell(0, 6, f"Clue: {clean_text(s.get('clue', ''))}")
+                
+                # BLANK PAGE FIX: Drastically tightened this spacing so they pack perfectly on 1 page!
+                if i < len(scrambles) - 1:
+                    pdf.ln(4) 
             continue
 
         # --- STANDARD HEADER ---
